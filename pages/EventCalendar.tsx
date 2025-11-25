@@ -12,9 +12,10 @@ import { ScreeningEvent } from '../types';
 import AddToCalendar from '../components/AddToCalendar';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
-import { Select } from '../components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { Label } from '../components/ui/label';
 
 // Helper to get visual config based on type
 const getVenueStyle = (type: string) => {
@@ -116,8 +117,12 @@ const EventCalendar: React.FC = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -245,8 +250,9 @@ const EventCalendar: React.FC = () => {
                 <form onSubmit={handleAddEvent}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">Event Name</label>
+                        <Label htmlFor="event-name" className="text-slate-700">Event Name</Label>
                         <Input 
+                            id="event-name"
                             required
                             name="name"
                             value={formData.name}
@@ -255,8 +261,9 @@ const EventCalendar: React.FC = () => {
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">Venue Name</label>
+                        <Label htmlFor="venue-name" className="text-slate-700">Venue Name</Label>
                         <Input 
+                            id="venue-name"
                             required
                             name="venueName"
                             value={formData.venueName}
@@ -265,8 +272,9 @@ const EventCalendar: React.FC = () => {
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">Date</label>
+                        <Label htmlFor="event-date" className="text-slate-700">Date</Label>
                         <Input 
+                            id="event-date"
                             required
                             type="date"
                             name="date"
@@ -275,8 +283,9 @@ const EventCalendar: React.FC = () => {
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">Time</label>
+                        <Label htmlFor="event-time" className="text-slate-700">Time</Label>
                         <Input 
+                            id="event-time"
                             required
                             name="time"
                             value={formData.time}
@@ -285,8 +294,9 @@ const EventCalendar: React.FC = () => {
                         />
                     </div>
                     <div className="md:col-span-2 space-y-2">
-                        <label className="text-sm font-medium text-slate-700">Address</label>
+                        <Label htmlFor="event-address" className="text-slate-700">Address</Label>
                         <Input 
+                            id="event-address"
                             required
                             name="address"
                             value={formData.address}
@@ -295,8 +305,9 @@ const EventCalendar: React.FC = () => {
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">Zip Code</label>
+                        <Label htmlFor="event-zip" className="text-slate-700">Zip Code</Label>
                         <Input 
+                            id="event-zip"
                             required
                             name="zip"
                             value={formData.zip}
@@ -305,16 +316,20 @@ const EventCalendar: React.FC = () => {
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">Venue Type</label>
+                        <Label htmlFor="venue-type" className="text-slate-700">Venue Type</Label>
                         <Select 
-                            name="type"
                             value={formData.type}
-                            onChange={handleInputChange}
+                            onValueChange={(value) => handleSelectChange('type', value)}
                         >
-                            <option value="Barbershop">Barbershop</option>
-                            <option value="Church">Church</option>
-                            <option value="Community Center">Community Center</option>
-                            <option value="Pharmacy">Pharmacy</option>
+                            <SelectTrigger id="venue-type">
+                                <SelectValue placeholder="Select venue type..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Barbershop">Barbershop</SelectItem>
+                                <SelectItem value="Church">Church</SelectItem>
+                                <SelectItem value="Community Center">Community Center</SelectItem>
+                                <SelectItem value="Pharmacy">Pharmacy</SelectItem>
+                            </SelectContent>
                         </Select>
                     </div>
                 </div>
