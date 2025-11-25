@@ -43,6 +43,17 @@ const AIScreening: React.FC = () => {
     }
   };
 
+  const getMimeType = (file: File) => {
+    if (file.type) return file.type;
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (ext === 'pdf') return 'application/pdf';
+    if (ext === 'txt') return 'text/plain';
+    if (ext === 'docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+    if (ext === 'png') return 'image/png';
+    return 'application/octet-stream';
+  };
+
   const fileToGenerativePart = async (file: File) => {
     return new Promise<{ inlineData: { data: string; mimeType: string } }>((resolve, reject) => {
       const reader = new FileReader();
@@ -53,7 +64,7 @@ const AIScreening: React.FC = () => {
         resolve({
           inlineData: {
             data: base64Content,
-            mimeType: file.type,
+            mimeType: getMimeType(file),
           },
         });
       };
@@ -89,7 +100,7 @@ const AIScreening: React.FC = () => {
       if (selectedFile) {
         const filePart = await fileToGenerativePart(selectedFile);
         parts.push(filePart);
-        parts.push({ text: "I have uploaded a file (image or PDF) containing my lab results or leg condition. Please analyze it." });
+        parts.push({ text: "I have uploaded a file (image, PDF, DOCX, or TXT) containing my lab results or leg condition. Please analyze it." });
       }
 
       const systemPrompt = `
@@ -185,7 +196,7 @@ const AIScreening: React.FC = () => {
                   <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:bg-slate-50 transition-colors relative">
                     <input
                       type="file"
-                      accept="image/*,application/pdf"
+                      accept="image/*,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,.txt"
                       onChange={handleFileChange}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
@@ -195,7 +206,7 @@ const AIScreening: React.FC = () => {
                         {selectedFile ? selectedFile.name : "Click to upload file"}
                       </span>
                       <span className="text-xs text-slate-400 mt-1">
-                        Supports: JPG, PNG, PDF
+                        Supports: JPG, PNG, PDF, DOCX, TXT
                       </span>
                     </div>
                   </div>
@@ -211,7 +222,7 @@ const AIScreening: React.FC = () => {
                         <div className="flex flex-col items-center text-slate-500">
                           <FileText className="h-12 w-12 mb-2" />
                           <span className="text-sm font-medium">{selectedFile.name}</span>
-                          <span className="text-xs uppercase mt-1">{selectedFile.type.split('/')[1] || 'PDF'}</span>
+                          <span className="text-xs uppercase mt-1">{selectedFile.type.split('/')[1] || selectedFile.name.split('.').pop()?.toUpperCase() || 'DOC'}</span>
                         </div>
                       )}
                       <button 
