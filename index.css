@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 346 100% 38%; /* Brand Red #C2002F */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 346 100% 38%;
+    --radius: 0.5rem;
+  }
+  
+  body {
+    font-family: 'Open Sans', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Merriweather', serif;
+  }
+  
+  /* FullCalendar Brand Overrides */
+  :root {
+    --fc-button-bg-color: #C2002F;
+    --fc-button-border-color: #C2002F;
+    --fc-button-hover-bg-color: #9f0026;
+    --fc-button-hover-border-color: #9f0026;
+    --fc-button-active-bg-color: #7a001e;
+    --fc-button-active-border-color: #7a001e;
+    --fc-event-bg-color: #C2002F;
+    --fc-event-border-color: #C2002F;
+    --fc-today-bg-color: #fff1f2;
+    --fc-page-bg-color: #ffffff;
+    --fc-neutral-bg-color: #f1f5f9;
+    --fc-list-event-hover-bg-color: #fff1f2;
+  }
+
+  .fc .fc-toolbar-title {
+    font-family: 'Merriweather', serif;
+    font-size: 1.5rem;
+  }
+  
+  .fc .fc-col-header-cell-cushion {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    color: #475569;
+  }
+
+  .fc-daygrid-day-number {
+    font-weight: 600;
+    color: #334155;
+  }
+  
+  @media (max-width: 768px) {
+    .fc .fc-toolbar {
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .fc .fc-toolbar-title {
+      font-size: 1.25rem;
+    }
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
