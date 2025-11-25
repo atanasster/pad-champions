@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Lock, User, Calendar, BookOpen } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
-import { Select } from '../components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { Label } from '../components/ui/label';
 
 const Volunteer: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'info' | 'login'>('info');
@@ -104,39 +105,48 @@ const Volunteer: React.FC = () => {
                   <form className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">First Name</label>
-                        <Input type="text" />
+                        <Label htmlFor="first-name" className="text-slate-700">First Name</Label>
+                        <Input id="first-name" type="text" />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">Last Name</label>
-                        <Input type="text" />
+                        <Label htmlFor="last-name" className="text-slate-700">Last Name</Label>
+                        <Input id="last-name" type="text" />
                       </div>
                     </div>
                     
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">Email (Use .edu if student)</label>
-                      <Input type="email" />
+                      <Label htmlFor="email" className="text-slate-700">Email (Use .edu if student)</Label>
+                      <Input id="email" type="email" />
                     </div>
 
                     <div className="space-y-2">
-                       <label className="text-sm font-medium text-slate-700">Affiliation / Medical School</label>
+                       <Label htmlFor="affiliation" className="text-slate-700">Affiliation / Medical School</Label>
                        <Select>
-                         <option>Select Institution...</option>
-                         <option>UCSF School of Medicine</option>
-                         <option>Stanford Medicine</option>
-                         <option>UC Davis</option>
-                         <option>Other / Community Physician</option>
+                         <SelectTrigger id="affiliation">
+                           <SelectValue placeholder="Select Institution..." />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="ucsf">UCSF School of Medicine</SelectItem>
+                           <SelectItem value="stanford">Stanford Medicine</SelectItem>
+                           <SelectItem value="ucdavis">UC Davis</SelectItem>
+                           <SelectItem value="other">Other / Community Physician</SelectItem>
+                         </SelectContent>
                        </Select>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">Role</label>
+                      <Label htmlFor="role" className="text-slate-700">Role</Label>
                        <Select>
-                         <option>Medical Student (Year 1-2)</option>
-                         <option>Medical Student (Year 3-4)</option>
-                         <option>Resident/Fellow</option>
-                         <option>Attending Physician</option>
-                         <option>Nurse / NP / PA</option>
+                         <SelectTrigger id="role">
+                           <SelectValue placeholder="Select role..." />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="med-student-1-2">Medical Student (Year 1-2)</SelectItem>
+                           <SelectItem value="med-student-3-4">Medical Student (Year 3-4)</SelectItem>
+                           <SelectItem value="resident-fellow">Resident/Fellow</SelectItem>
+                           <SelectItem value="attending">Attending Physician</SelectItem>
+                           <SelectItem value="nurse-np-pa">Nurse / NP / PA</SelectItem>
+                         </SelectContent>
                        </Select>
                     </div>
 
@@ -162,12 +172,12 @@ const Volunteer: React.FC = () => {
                    </div>
                    <form className="space-y-4">
                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">Email</label>
-                        <Input type="email" />
+                        <Label htmlFor="login-email" className="text-slate-700">Email</Label>
+                        <Input id="login-email" type="email" />
                      </div>
                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">Password</label>
-                        <Input type="password" />
+                        <Label htmlFor="login-password" className="text-slate-700">Password</Label>
+                        <Input id="login-password" type="password" />
                      </div>
                      <Button type="button" className="w-full bg-brand-dark hover:bg-slate-800 font-bold py-6">
                        Log In

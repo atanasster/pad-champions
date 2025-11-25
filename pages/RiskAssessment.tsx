@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 
 const QUESTIONS: QuizQuestion[] = [
   { id: 1, text: "Do you smoke or have you smoked in the past?", weight: 2 },
@@ -81,37 +82,41 @@ const RiskAssessment: React.FC = () => {
             ) : (
               <div className="text-center animate-in fade-in zoom-in-95 duration-300">
                 {isHighRisk ? (
-                  <div className="bg-red-50 p-8 rounded-xl border border-red-200 mb-8">
-                    <AlertCircle className="h-16 w-16 text-brand-red mx-auto mb-4" />
-                    <h2 className="text-3xl font-bold text-brand-red mb-4 font-serif">You May Be At Risk</h2>
-                    <p className="text-slate-800 text-lg mb-8 leading-relaxed">
-                      Based on your answers, you have factors common in people with leg artery blockages. We strongly recommend getting a free screening.
-                    </p>
-                    <Button
-                      asChild
-                      className="w-full sm:w-auto bg-brand-red hover:bg-red-800 text-lg font-bold h-14 px-8"
-                    >
-                      <Link to="/screenings">
-                        Find a Screening Near You
-                      </Link>
-                    </Button>
-                  </div>
+                  <Alert variant="destructive" className="bg-red-50 border-red-200 mb-8 p-8 text-center">
+                    <div className="flex flex-col items-center">
+                      <AlertCircle className="h-16 w-16 text-brand-red mb-4" />
+                      <AlertTitle className="text-3xl font-bold text-brand-red mb-4 font-serif">You May Be At Risk</AlertTitle>
+                      <AlertDescription className="text-slate-800 text-lg mb-8 leading-relaxed">
+                        Based on your answers, you have factors common in people with leg artery blockages. We strongly recommend getting a free screening.
+                      </AlertDescription>
+                      <Button
+                        asChild
+                        className="w-full sm:w-auto bg-brand-red hover:bg-red-800 text-lg font-bold h-14 px-8"
+                      >
+                        <Link to="/screenings">
+                          Find a Screening Near You
+                        </Link>
+                      </Button>
+                    </div>
+                  </Alert>
                 ) : (
-                  <div className="bg-green-50 p-8 rounded-xl border border-green-200 mb-8">
-                    <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
-                    <h2 className="text-3xl font-bold text-green-700 mb-4 font-serif">Low Risk</h2>
-                    <p className="text-slate-800 text-lg mb-8 leading-relaxed">
-                      Your answers suggest a lower risk, but it's always good to stay informed. Keep your legs healthy by walking daily!
-                    </p>
-                    <Button
-                      asChild
-                      className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-lg font-bold h-14 px-8"
-                    >
-                      <Link to="/learn">
-                        Learn More About Leg Health
-                      </Link>
-                    </Button>
-                  </div>
+                  <Alert className="bg-green-50 border-green-200 mb-8 p-8 text-center">
+                    <div className="flex flex-col items-center">
+                      <CheckCircle className="h-16 w-16 text-green-600 mb-4" />
+                      <AlertTitle className="text-3xl font-bold text-green-700 mb-4 font-serif">Low Risk</AlertTitle>
+                      <AlertDescription className="text-slate-800 text-lg mb-8 leading-relaxed">
+                        Your answers suggest a lower risk, but it's always good to stay informed. Keep your legs healthy by walking daily!
+                      </AlertDescription>
+                      <Button
+                        asChild
+                        className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-lg font-bold h-14 px-8"
+                      >
+                        <Link to="/learn">
+                          Learn More About Leg Health
+                        </Link>
+                      </Button>
+                    </div>
+                  </Alert>
                 )}
                 
                 <Button

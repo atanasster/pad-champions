@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, HeartPulse } from 'lucide-react';
 import { NavItem } from '../types';
+import { Button } from './ui/button';
 
 const navItems: NavItem[] = [
   { label: 'Home', path: '/' },
@@ -72,14 +73,16 @@ const Navbar: React.FC = () => {
 
           {/* Mobile Menu Button */}
           <div className="flex items-center lg:hidden">
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setIsOpen(!isOpen)}
-              className="inline-flex items-center justify-center p-2 rounded text-slate-600 hover:text-brand-red hover:bg-slate-100 focus:outline-none"
+              className="text-slate-600 hover:text-brand-red hover:bg-slate-100"
               aria-expanded={isOpen}
             >
               <span className="sr-only">Open main menu</span>
-              {isOpen ? <X className="block h-6 w-6" /> : <Menu className="block h-6 w-6" />}
-            </button>
+              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
           </div>
         </div>
       </div>

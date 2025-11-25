@@ -4,9 +4,10 @@ import { MOCK_EVENTS } from '../data/mockData';
 import AddToCalendar from '../components/AddToCalendar';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
-import { Select } from '../components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { Label } from '../components/ui/label';
 
 const ScreeningLocator: React.FC = () => {
   const [zipFilter, setZipFilter] = useState('');
@@ -31,9 +32,9 @@ const ScreeningLocator: React.FC = () => {
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label htmlFor="zip" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2">
+                <Label htmlFor="zip" className="flex items-center gap-2">
                   <Search className="w-4 h-4" /> Filter by Zip Code
-                </label>
+                </Label>
                 <Input
                   type="text"
                   id="zip"
@@ -43,19 +44,20 @@ const ScreeningLocator: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="type" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2">
+                <Label htmlFor="type" className="flex items-center gap-2">
                   <Filter className="w-4 h-4" /> Venue Type
-                </label>
-                <Select
-                  id="type"
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                >
-                  <option value="All">All Locations</option>
-                  <option value="Barbershop">Barbershops</option>
-                  <option value="Church">Churches</option>
-                  <option value="Community Center">Community Centers</option>
-                  <option value="Pharmacy">Pharmacies</option>
+                </Label>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger id="type">
+                    <SelectValue placeholder="Select venue type..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All Locations</SelectItem>
+                    <SelectItem value="Barbershop">Barbershops</SelectItem>
+                    <SelectItem value="Church">Churches</SelectItem>
+                    <SelectItem value="Community Center">Community Centers</SelectItem>
+                    <SelectItem value="Pharmacy">Pharmacies</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
             </div>

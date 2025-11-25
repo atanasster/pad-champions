@@ -1,16 +1,31 @@
 import React, { useState } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { Upload, Brain, FileText, Activity, AlertTriangle, Terminal } from 'lucide-react';
+import { Upload, Brain, FileText, Activity, AlertTriangle, Terminal, CheckCircle, Zap } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Badge } from '../components/ui/badge';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-// Pricing estimates for Gemini 2.5 Flash (Example rates, subject to change)
-const COST_PER_1M_INPUT_TOKENS = 0.10;
-const COST_PER_1M_OUTPUT_TOKENS = 0.40;
-const AI_MODEL = 'gemini-2.5-flash';
+// Pricing estimates per 1M tokens
+const MODEL_CONFIG: Record<string, { label: string; inputCost: number; outputCost: number; description: string }> = {
+  'gemini-2.5-flash': {
+    label: 'Gemini 2.5 Flash',
+    inputCost: 0.10,
+    outputCost: 0.40,
+    description: 'Fast, cost-effective model for standard screenings.'
+  },
+  'gemini-3-pro-preview': {
+    label: 'Gemini 3.0 Pro (Preview)',
+    inputCost: 2.00,
+    outputCost: 8.00,
+    description: 'Advanced reasoning for complex medical histories.'
+  }
+};
 
 const AIScreening: React.FC = () => {
   const [medicalHistory, setMedicalHistory] = useState('');
@@ -19,6 +34,7 @@ const AIScreening: React.FC = () => {
   const [analysis, setAnalysis] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash');
   const [usageStats, setUsageStats] = useState<{
     inputTokens: number;
     outputTokens: number;
@@ -26,12 +42,40 @@ const AIScreening: React.FC = () => {
   } | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Reset error state on new interaction
+    setError(null);
+    setAnalysis('');
+
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+
+      // 1. Validate File Size (Max 20MB)
+      const MAX_SIZE = 20 * 1024 * 1024; // 20MB
+      if (file.size > MAX_SIZE) {
+        setError("File is too large. Please upload a file smaller than 20MB.");
+        setSelectedFile(null);
+        setFilePreview(null);
+        e.target.value = ''; // Reset input
+        return;
+      }
+
+      // 2. Validate File Extension
+      const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf', 'txt', 'docx'];
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      
+      if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+        setError("Unsupported file type. Please upload JPG, PNG, PDF, DOCX, or TXT.");
+        setSelectedFile(null);
+        setFilePreview(null);
+        e.target.value = ''; // Reset input
+        return;
+      }
+
+      // File is valid
       setSelectedFile(file);
       
       // Create preview if it's an image
-      if (file.type.startsWith('image/')) {
+      if (file.type.startsWith('image/') || ['jpg', 'jpeg', 'png'].includes(fileExtension)) {
         const reader = new FileReader();
         reader.onloadend = () => {
           setFilePreview(reader.result as string);
@@ -84,6 +128,8 @@ const AIScreening: React.FC = () => {
     setAnalysis('');
     setUsageStats(null);
 
+    const currentModelConfig = MODEL_CONFIG[selectedModel];
+
     try {
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
@@ -120,7 +166,7 @@ const AIScreening: React.FC = () => {
       `;
 
       const response = await ai.models.generateContent({
-        model: AI_MODEL,
+        model: selectedModel,
         contents: {
           parts: parts
         },
@@ -136,7 +182,7 @@ const AIScreening: React.FC = () => {
       if (response.usageMetadata) {
         const input = response.usageMetadata.promptTokenCount || 0;
         const output = response.usageMetadata.candidatesTokenCount || 0;
-        const cost = ((input / 1000000) * COST_PER_1M_INPUT_TOKENS) + ((output / 1000000) * COST_PER_1M_OUTPUT_TOKENS);
+        const cost = ((input / 1000000) * currentModelConfig.inputCost) + ((output / 1000000) * currentModelConfig.outputCost);
         
         setUsageStats({
           inputTokens: input,
@@ -177,12 +223,36 @@ const AIScreening: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 
+                {/* Model Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                   <Label className="block text-slate-700 mb-2 flex items-center justify-between">
+                     <span className="flex items-center"><Zap className="w-4 h-4 mr-1 text-slate-500"/> AI Model</span>
+                     <span className="text-xs text-slate-400 font-normal">Pricing varies by model</span>
+                   </Label>
+                   <Select value={selectedModel} onValueChange={setSelectedModel}>
+                     <SelectTrigger className="font-medium text-brand-dark border-slate-300">
+                       <SelectValue placeholder="Select a model" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       {Object.entries(MODEL_CONFIG).map(([key, config]) => (
+                         <SelectItem key={key} value={key}>
+                           {config.label} (${config.inputCost.toFixed(2)}/1M in, ${config.outputCost.toFixed(2)}/1M out)
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                   <p className="text-xs text-slate-500 mt-2">
+                       {MODEL_CONFIG[selectedModel].description}
+                   </p>
+                </div>
+
+                <div className="border-t border-slate-100 pt-4">
+                  <Label htmlFor="medical-history" className="block text-slate-700 mb-2">
                     Symptoms & Medical History
-                  </label>
-                  <textarea
-                    className="w-full min-h-[150px] p-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-brand-red"
+                  </Label>
+                  <Textarea
+                    id="medical-history"
+                    className="min-h-[150px] focus-visible:ring-brand-red"
                     placeholder="e.g., I am a 65-year-old male with type 2 diabetes. My calves hurt when I walk more than 2 blocks. I smoke occasionally."
                     value={medicalHistory}
                     onChange={(e) => setMedicalHistory(e.target.value)}
@@ -190,11 +260,12 @@ const AIScreening: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <Label htmlFor="file-upload" className="block text-slate-700 mb-2">
                     Upload Lab Results or Photos (Optional)
-                  </label>
+                  </Label>
                   <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:bg-slate-50 transition-colors relative">
                     <input
+                      id="file-upload"
                       type="file"
                       accept="image/*,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,.txt"
                       onChange={handleFileChange}
@@ -203,15 +274,19 @@ const AIScreening: React.FC = () => {
                     <div className="flex flex-col items-center">
                       <Upload className="h-8 w-8 text-slate-400 mb-2" />
                       <span className="text-sm text-slate-600 font-medium">
-                        {selectedFile ? selectedFile.name : "Click to upload file"}
+                        {selectedFile ? "Change file" : "Click to upload file"}
                       </span>
                       <span className="text-xs text-slate-400 mt-1">
-                        Supports: JPG, PNG, PDF, DOCX, TXT
+                        JPG, PNG, PDF, DOCX, TXT (Max 20MB)
                       </span>
                     </div>
                   </div>
                   {selectedFile && (
                     <div className="mt-4 relative w-full h-40 bg-slate-100 rounded overflow-hidden border border-slate-200 flex items-center justify-center">
+                      <Badge variant="outline" className="absolute top-2 left-2 bg-green-100 text-green-700 border-green-200 shadow-sm z-10">
+                        <CheckCircle className="w-3 h-3 mr-1" /> Ready for Analysis
+                      </Badge>
+                      
                       {selectedFile.type.startsWith('image/') && filePreview ? (
                         <img 
                           src={filePreview} 
@@ -225,21 +300,26 @@ const AIScreening: React.FC = () => {
                           <span className="text-xs uppercase mt-1">{selectedFile.type.split('/')[1] || selectedFile.name.split('.').pop()?.toUpperCase() || 'DOC'}</span>
                         </div>
                       )}
-                      <button 
-                        onClick={() => { setSelectedFile(null); setFilePreview(null); }}
-                        className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 shadow-sm hover:bg-red-700 z-10"
+                      <Button
+                        type="button"
+                        onClick={() => { setSelectedFile(null); setFilePreview(null); setError(null); }}
+                        className="absolute top-2 right-2 h-6 w-6 rounded-full p-0 shadow-sm z-10"
+                        title="Remove file"
+                        variant="destructive"
                       >
                         <AlertTriangle className="h-3 w-3" />
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
 
                 {error && (
-                  <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm flex items-center">
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    {error}
-                  </div>
+                  <Alert variant="destructive" className="bg-red-50 border-red-100">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="text-red-700">
+                      {error}
+                    </AlertDescription>
+                  </Alert>
                 )}
 
                 <Button 
@@ -268,7 +348,7 @@ const AIScreening: React.FC = () => {
                           API Usage Metrics
                         </span>
                         <span className="text-xs font-normal normal-case tracking-normal text-slate-400">
-                          {AI_MODEL}
+                          {MODEL_CONFIG[selectedModel].label}
                         </span>
                       </CardTitle>
                     </CardHeader>
@@ -291,7 +371,7 @@ const AIScreening: React.FC = () => {
                         </div>
                       </div>
                       <div className="mt-4 text-[10px] text-slate-600 text-center font-mono">
-                        Pricing estimated
+                        Estimated based on {selectedModel} pricing
                       </div>
                     </CardContent>
                   </Card>
