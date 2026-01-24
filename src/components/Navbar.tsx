@@ -15,7 +15,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 const navItems: NavItem[] = [
-  { label: 'Home', path: '/' },
   { label: 'Find a Screening', path: '/screenings' },
   { label: 'Calendar', path: '/calendar' },
   { label: 'Am I At Risk?', path: '/quiz' },
@@ -48,17 +47,7 @@ const Navbar: React.FC = () => {
         <div className="flex justify-between h-20">
           <div className="flex items-center">
             <Link to="/" className="shrink-0 flex items-center gap-3" onClick={closeMenu}>
-              <div className="bg-brand-red p-1.5 rounded">
-                <HeartPulse className="h-6 w-6 text-white" aria-hidden="true" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-lg leading-none text-brand-dark tracking-tight font-serif">
-                  CHAMPIONS
-                </span>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
-                  Limb Preservation Network
-                </span>
-              </div>
+              <img src="/img/logo-2.png" alt="CHAMPIONS Logo" className="h-12 w-auto" />
             </Link>
           </div>
 
