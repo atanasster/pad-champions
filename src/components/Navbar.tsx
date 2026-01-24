@@ -28,7 +28,7 @@ const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, userRole, logout } = useAuth();
 
   const closeMenu = () => setIsOpen(false);
 
@@ -87,43 +87,56 @@ const Navbar: React.FC = () => {
 
           <div className="flex items-center gap-4">
             {currentUser ? (
-               <DropdownMenu>
-               <DropdownMenuTrigger asChild>
-                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                   <Avatar>
-                     <AvatarImage src={currentUser.photoURL || ''} alt={currentUser.displayName || 'User'} />
-                     <AvatarFallback>{currentUser.displayName ? currentUser.displayName[0] : 'U'}</AvatarFallback>
-                   </Avatar>
-                 </Button>
-               </DropdownMenuTrigger>
-               <DropdownMenuContent className="w-56" align="end" forceMount>
-                 <DropdownMenuLabel className="font-normal">
-                   <div className="flex flex-col space-y-1">
-                     <p className="text-sm font-medium leading-none">{currentUser.displayName}</p>
-                     <p className="text-xs leading-none text-muted-foreground">
-                       {currentUser.email}
-                     </p>
-                   </div>
-                 </DropdownMenuLabel>
-                 <DropdownMenuSeparator />
-                 <DropdownMenuItem onClick={() => navigate('/dashboard')}>
-                   <LayoutDashboard className="mr-2 h-4 w-4" />
-                   <span>Dashboard</span>
-                 </DropdownMenuItem>
-                 <DropdownMenuItem onClick={() => navigate('/profile')}>
-                   <User className="mr-2 h-4 w-4" />
-                   <span>Profile</span>
-                 </DropdownMenuItem>
-                 <DropdownMenuSeparator />
-                 <DropdownMenuItem onClick={handleLogout}>
-                   <LogOut className="mr-2 h-4 w-4" />
-                   <span>Log out</span>
-                 </DropdownMenuItem>
-               </DropdownMenuContent>
-             </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar>
+                      <AvatarImage
+                        src={currentUser.photoURL || ''}
+                        alt={currentUser.displayName || 'User'}
+                      />
+                      <AvatarFallback>
+                        {currentUser.displayName ? currentUser.displayName[0] : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{currentUser.displayName}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {currentUser.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {userRole === 'admin' && (
+                    <DropdownMenuItem onClick={() => navigate('/admin')}>
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>Admin Console</span>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    <span>Dashboard</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <Link to="/login" className="hidden lg:block">
-                <Button variant="outline" size="sm">Log In</Button>
+                <Button variant="outline" size="sm">
+                  Log In
+                </Button>
               </Link>
             )}
 
@@ -163,39 +176,48 @@ const Navbar: React.FC = () => {
               </Link>
             ))}
             {!currentUser && (
-               <Link
-               to="/login"
-               onClick={closeMenu}
-               className="block px-4 py-3 rounded text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-red"
-             >
-               Log In
-             </Link>
+              <Link
+                to="/login"
+                onClick={closeMenu}
+                className="block px-4 py-3 rounded text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-red"
+              >
+                Log In
+              </Link>
             )}
-             {currentUser && (
+            {currentUser && (
               <>
-                 <Link
+                {userRole === 'admin' && (
+                  <Link
+                    to="/admin"
+                    onClick={closeMenu}
+                    className="block px-4 py-3 rounded text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-red"
+                  >
+                    Admin Console
+                  </Link>
+                )}
+                <Link
                   to="/dashboard"
-                   onClick={closeMenu}
-                   className="block px-4 py-3 rounded text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-red"
-                 >
-                   Dashboard
-                 </Link>
-                 <Link
-                   to="/profile"
-                   onClick={closeMenu}
-                   className="block px-4 py-3 rounded text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-red"
-                 >
-                   Profile
-                 </Link>
-                 <div
-                   onClick={() => {
+                  onClick={closeMenu}
+                  className="block px-4 py-3 rounded text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-red"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/profile"
+                  onClick={closeMenu}
+                  className="block px-4 py-3 rounded text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-red"
+                >
+                  Profile
+                </Link>
+                <div
+                  onClick={() => {
                     handleLogout();
                     closeMenu();
-                   }}
-                   className="block px-4 py-3 rounded text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-red cursor-pointer"
-                 >
-                   Log Out
-                 </div>
+                  }}
+                  className="block px-4 py-3 rounded text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-red cursor-pointer"
+                >
+                  Log Out
+                </div>
               </>
             )}
           </div>

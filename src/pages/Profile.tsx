@@ -12,8 +12,13 @@ const Profile: React.FC = () => {
       <Card>
         <CardHeader className="flex flex-row items-center gap-4">
           <Avatar className="h-20 w-20">
-            <AvatarImage src={currentUser?.photoURL || ''} alt={currentUser?.displayName || 'User'} />
-            <AvatarFallback>{currentUser?.displayName ? currentUser.displayName[0] : 'U'}</AvatarFallback>
+            <AvatarImage
+              src={currentUser?.photoURL || ''}
+              alt={currentUser?.displayName || 'User'}
+            />
+            <AvatarFallback>
+              {currentUser?.displayName ? currentUser.displayName[0] : 'U'}
+            </AvatarFallback>
           </Avatar>
           <div>
             <CardTitle className="text-2xl">{currentUser?.displayName}</CardTitle>

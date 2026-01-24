@@ -20,3 +20,14 @@ export interface NavItem {
   label: string;
   path: string;
 }
+
+export type UserRole = 'admin' | 'moderator' | 'volunteer';
+
+export interface UserData {
+  uid: string;
+  email: string;
+  displayName?: string;
+  photoURL?: string;
+  role: UserRole;
+  createdAt: string;
+}

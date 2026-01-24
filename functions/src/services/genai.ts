@@ -31,7 +31,8 @@ export class GenAIService {
       });
     }
 
-    const systemPrompt = `
+    const systemPrompt =
+      `
       You are an expert vascular specialist assistant for the CHAMPIONS Limb Preservation Network.
       Your goal is to screen for Peripheral Artery Disease (PAD) risks.
       

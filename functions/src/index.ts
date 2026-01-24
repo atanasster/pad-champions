@@ -61,3 +61,10 @@ export const analyzePatientData = onRequest({ cors: true }, async (req, res) => 
     }
   }
 });
+
+// User Management Exports
+export { onUserCreated } from './userTriggers';
+export { listUsers, setUserRole } from './userManagement';
+
+
+

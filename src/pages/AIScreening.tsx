@@ -148,7 +148,7 @@ const AIScreening: React.FC = () => {
     setUsageStats(null);
 
     // const currentModelConfig = MODEL_CONFIG[selectedModel];
-    
+
     // Clear previous analysis
     setAnalysis('');
 
@@ -203,10 +203,9 @@ const AIScreening: React.FC = () => {
         const chunkValue = decoder.decode(value, { stream: true });
         setAnalysis((prev) => prev + chunkValue);
       }
-      
+
       // We don't have usage stats in streaming mode easily unless we send it as a final chunk or header
       // For now, we'll skip setting precise usage stats or estimate them
-      
     } catch (err: unknown) {
       console.error(err);
       const errorMessage = err instanceof Error ? err.message : String(err);

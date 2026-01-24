@@ -24,5 +24,5 @@ export const functions = getFunctions(app);
 
 if (import.meta.env.DEV) {
   console.log('🔌 Connecting to Functions Emulator');
-  connectFunctionsEmulator(functions, 'localhost', 5001);
+  connectFunctionsEmulator(functions, '127.0.0.1', 5001);
 }

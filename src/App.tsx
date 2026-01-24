@@ -19,8 +19,10 @@ import About from './pages/About';
 import AIScreening from './pages/AIScreening';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import { AuthProvider } from './contexts/AuthProvider';
 
 const Layout = () => {
@@ -53,6 +55,11 @@ const router = createBrowserRouter(
       <Route element={<ProtectedRoute />}>
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="profile" element={<Profile />} />
+      </Route>
+
+      {/* Admin Routes */}
+      <Route element={<AdminRoute />}>
+        <Route path="admin" element={<AdminDashboard />} />
       </Route>
     </Route>,
   ),

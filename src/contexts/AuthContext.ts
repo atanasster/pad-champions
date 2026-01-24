@@ -1,11 +1,14 @@
 import { createContext, useContext } from 'react';
 import { User } from 'firebase/auth';
+import { UserRole } from '../types';
 
 interface AuthContextType {
   currentUser: User | null;
+  userRole: UserRole | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser?: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
