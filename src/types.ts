@@ -1,3 +1,5 @@
+import { Timestamp } from 'firebase/firestore';
+
 export interface ScreeningEvent {
   id: string;
   name: string;
@@ -30,4 +32,37 @@ export interface UserData {
   photoURL?: string;
   role: UserRole;
   createdAt: string;
+}
+
+export interface ForumPost {
+  id: string;
+  title: string;
+  content: string;
+  authorId: string;
+  authorName: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  likeCount: number;
+  commentCount: number;
+  lastCommentAt: Timestamp | null;
+}
+
+export interface ForumComment {
+  id: string;
+  postId: string;
+  content: string;
+  authorId: string;
+  authorName: string;
+  createdAt: Timestamp;
+  parentId: string | null;
+  children?: ForumComment[]; // For UI threading
+}
+
+export interface ForumNotification {
+  id: string;
+  type: 'reply' | 'system';
+  message: string;
+  link: string;
+  read: boolean;
+  createdAt: Timestamp;
 }
