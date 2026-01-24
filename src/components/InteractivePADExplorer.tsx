@@ -156,9 +156,9 @@ const InteractivePADExplorer: React.FC = () => {
                   className={cn(
                       "flex-1 py-1.5 px-2 text-xs font-bold rounded-md capitalize transition-all",
                       severity === s 
-                          ? s === 'mild' ? "bg-yellow-100 text-yellow-800 shadow-sm border border-yellow-200"
-                          : s === 'moderate' ? "bg-orange-100 text-orange-800 shadow-sm border border-orange-200"
-                          : "bg-red-100 text-red-900 shadow-sm border border-red-200"
+                          ? s === 'mild' ? "bg-yellow-100 text-yellow-800 shadow-xs border border-yellow-200"
+                          : s === 'moderate' ? "bg-orange-100 text-orange-800 shadow-xs border border-orange-200"
+                          : "bg-red-100 text-red-900 shadow-xs border border-red-200"
                           : "text-slate-500 hover:bg-slate-200"
                   )}
               >
@@ -224,7 +224,7 @@ const InteractivePADExplorer: React.FC = () => {
         `}</style>
         
         {/* Interactive SVG Area */}
-        <div className="relative flex-1 flex items-center justify-center p-4 bg-gradient-to-b from-slate-900 to-slate-950 overflow-hidden">
+        <div className="relative flex-1 flex items-center justify-center p-4 bg-linear-to-b from-slate-900 to-slate-950 overflow-hidden">
           
           {/* Legend Overlay */}
           <div className="absolute top-4 left-4 z-10 bg-black/70 backdrop-blur-md p-4 rounded-lg border border-white/10 text-xs text-white shadow-lg pointer-events-none">
@@ -234,7 +234,7 @@ const InteractivePADExplorer: React.FC = () => {
             </div>
             <div className="flex items-center mb-2">
                  {/* Gradient/Color for plaque */}
-                <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-red-500 rounded-full mr-2"></div> Plaque / Stenosis
+                <div className="w-3 h-3 bg-linear-to-r from-yellow-400 to-red-500 rounded-full mr-2"></div> Plaque / Stenosis
             </div>
             <div className="flex items-center">
                 <div className="w-4 h-4 rounded-full border border-white mr-2 flex items-center justify-center">
@@ -470,7 +470,7 @@ const InteractivePADExplorer: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="p-8 flex-grow bg-white flex flex-col animate-in slide-in-from-bottom-4 duration-500">
+                <div className="p-8 grow bg-white flex flex-col animate-in slide-in-from-bottom-4 duration-500">
                     <h4 className="flex items-center text-sm font-bold text-slate-900 uppercase tracking-wide mb-4">
                         <Activity className="w-4 h-4 mr-2 text-brand-red" />
                         Disease Severity
@@ -502,7 +502,7 @@ const InteractivePADExplorer: React.FC = () => {
                              <ul className="space-y-3 mb-6">
                                 {stage.symptoms.map((s, i) => (
                                     <li key={i} className="flex items-start text-sm text-slate-800">
-                                        <ChevronRight className="w-4 h-4 mr-2 flex-shrink-0 mt-0.5 opacity-50" />
+                                        <ChevronRight className="w-4 h-4 mr-2 shrink-0 mt-0.5 opacity-50" />
                                         {s}
                                     </li>
                                 ))}

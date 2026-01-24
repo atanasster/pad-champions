@@ -22,11 +22,11 @@ const Navbar: React.FC = () => {
   const closeMenu = () => setIsOpen(false);
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm font-sans">
+    <nav className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-xs font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20">
           <div className="flex items-center">
-            <Link to="/" className="flex-shrink-0 flex items-center gap-3" onClick={closeMenu}>
+            <Link to="/" className="shrink-0 flex items-center gap-3" onClick={closeMenu}>
               <div className="bg-brand-red p-1.5 rounded">
                 <HeartPulse className="h-6 w-6 text-white" aria-hidden="true" />
               </div>
@@ -60,7 +60,7 @@ const Navbar: React.FC = () => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`px-2 py-2 rounded text-xs font-semibold whitespace-nowrap transition-colors flex-shrink-0 ${
+                className={`px-2 py-2 rounded text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
                   location.pathname === item.path
                     ? 'text-brand-red bg-red-50'
                     : 'text-slate-600 hover:text-brand-red hover:bg-slate-50'

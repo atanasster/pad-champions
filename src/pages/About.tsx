@@ -30,7 +30,7 @@ const About: React.FC = () => {
           </p>
 
           <h2 className="text-3xl font-bold text-brand-dark mt-12 mb-6 font-serif">Founder's Message</h2>
-          <Card className="mt-6 bg-slate-50 border-none shadow-sm">
+          <Card className="mt-6 bg-slate-50 border-none shadow-xs">
             <CardContent className="p-8 flex flex-col md:flex-row gap-8 items-start">
                 <img 
                 src="https://picsum.photos/id/1005/200/200" 

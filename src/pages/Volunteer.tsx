@@ -16,7 +16,7 @@ const Volunteer: React.FC = () => {
         
         {/* Toggle Tabs */}
         <div className="flex justify-center mb-10">
-          <div className="bg-white p-1.5 rounded-lg shadow-sm border border-slate-200 inline-flex gap-1">
+          <div className="bg-white p-1.5 rounded-lg shadow-xs border border-slate-200 inline-flex gap-1">
             <Button
               variant={activeTab === 'info' ? 'default' : 'ghost'}
               onClick={() => setActiveTab('info')}
@@ -46,7 +46,7 @@ const Volunteer: React.FC = () => {
               <div className="space-y-6">
                 <Card className="border-none shadow-none bg-transparent">
                     <CardContent className="p-0 flex">
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                             <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
                             <User className="h-6 w-6 text-blue-700" />
                             </div>
@@ -60,7 +60,7 @@ const Volunteer: React.FC = () => {
 
                 <Card className="border-none shadow-none bg-transparent">
                     <CardContent className="p-0 flex">
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                             <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
                             <BookOpen className="h-6 w-6 text-green-700" />
                             </div>
@@ -74,7 +74,7 @@ const Volunteer: React.FC = () => {
                 
                 <Card className="border-none shadow-none bg-transparent">
                     <CardContent className="p-0 flex">
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                             <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
                             <Calendar className="h-6 w-6 text-purple-700" />
                             </div>

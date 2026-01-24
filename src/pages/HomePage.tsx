@@ -49,7 +49,7 @@ const HomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Card 1 */}
-            <Card className="border-t-4 border-t-brand-red shadow-sm hover:shadow-md transition">
+            <Card className="border-t-4 border-t-brand-red shadow-xs hover:shadow-md transition">
               <CardContent className="p-8">
                 <div className="h-12 w-12 bg-red-50 rounded-full flex items-center justify-center mb-6">
                   <Activity className="h-6 w-6 text-brand-red" />
@@ -67,7 +67,7 @@ const HomePage: React.FC = () => {
             </Card>
 
             {/* Card 2 */}
-            <Card className="border-t-4 border-t-brand-red shadow-sm hover:shadow-md transition">
+            <Card className="border-t-4 border-t-brand-red shadow-xs hover:shadow-md transition">
               <CardContent className="p-8">
                 <div className="h-12 w-12 bg-red-50 rounded-full flex items-center justify-center mb-6">
                   <CalendarCheck className="h-6 w-6 text-brand-red" />
@@ -85,7 +85,7 @@ const HomePage: React.FC = () => {
             </Card>
 
             {/* Card 3 */}
-            <Card className="border-t-4 border-t-slate-600 shadow-sm hover:shadow-md transition">
+            <Card className="border-t-4 border-t-slate-600 shadow-xs hover:shadow-md transition">
               <CardContent className="p-8">
                 <div className="h-12 w-12 bg-slate-100 rounded-full flex items-center justify-center mb-6">
                   <MapPin className="h-6 w-6 text-slate-800" />

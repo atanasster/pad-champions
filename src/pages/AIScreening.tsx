@@ -165,7 +165,7 @@ const AIScreening: React.FC = () => {
         Disclaimer: Start your response with "AI Assessment (Not a Diagnosis):".
       `;
 
-      const response = await ai.models.generateContent({
+      const result = await ai.models.generateContentStream({
         model: selectedModel,
         contents: {
           parts: parts
@@ -176,19 +176,28 @@ const AIScreening: React.FC = () => {
         }
       });
 
-      setAnalysis(response.text || "No analysis generated.");
-
-      // Calculate usage
-      if (response.usageMetadata) {
-        const input = response.usageMetadata.promptTokenCount || 0;
-        const output = response.usageMetadata.candidatesTokenCount || 0;
-        const cost = ((input / 1000000) * currentModelConfig.inputCost) + ((output / 1000000) * currentModelConfig.outputCost);
+      let accumulatedText = '';
+      
+      // Iterate over the stream
+      for await (const chunk of result) {
+        const chunkText = chunk.text;
+        if (chunkText) {
+          accumulatedText += chunkText;
+          setAnalysis(accumulatedText);
+        }
         
-        setUsageStats({
-          inputTokens: input,
-          outputTokens: output,
-          totalCost: cost
-        });
+        // Check for usage metadata in the final chunk or wherever it appears
+        if (chunk.usageMetadata) {
+            const input = chunk.usageMetadata.promptTokenCount || 0;
+            const output = chunk.usageMetadata.candidatesTokenCount || 0;
+            const cost = ((input / 1000000) * currentModelConfig.inputCost) + ((output / 1000000) * currentModelConfig.outputCost);
+            
+            setUsageStats({
+              inputTokens: input,
+              outputTokens: output,
+              totalCost: cost
+            });
+        }
       }
 
     } catch (err: any) {
@@ -283,7 +292,7 @@ const AIScreening: React.FC = () => {
                   </div>
                   {selectedFile && (
                     <div className="mt-4 relative w-full h-40 bg-slate-100 rounded overflow-hidden border border-slate-200 flex items-center justify-center">
-                      <Badge variant="outline" className="absolute top-2 left-2 bg-green-100 text-green-700 border-green-200 shadow-sm z-10">
+                      <Badge variant="outline" className="absolute top-2 left-2 bg-green-100 text-green-700 border-green-200 shadow-xs z-10">
                         <CheckCircle className="w-3 h-3 mr-1" /> Ready for Analysis
                       </Badge>
                       
@@ -303,7 +312,7 @@ const AIScreening: React.FC = () => {
                       <Button
                         type="button"
                         onClick={() => { setSelectedFile(null); setFilePreview(null); setError(null); }}
-                        className="absolute top-2 right-2 h-6 w-6 rounded-full p-0 shadow-sm z-10"
+                        className="absolute top-2 right-2 h-6 w-6 rounded-full p-0 shadow-xs z-10"
                         title="Remove file"
                         variant="destructive"
                       >

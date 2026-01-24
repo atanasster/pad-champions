@@ -79,7 +79,7 @@ const EventCalendar: React.FC = () => {
     
     return (
         <div className="flex items-center gap-1.5 px-1.5 py-0.5 w-full overflow-hidden">
-            <Icon size={12} className="flex-shrink-0" strokeWidth={3} />
+            <Icon size={12} className="shrink-0" strokeWidth={3} />
             <span className="truncate text-xs font-bold leading-tight">{eventInfo.event.title}</span>
         </div>
     );
@@ -179,11 +179,11 @@ const EventCalendar: React.FC = () => {
     <div className="bg-slate-50 min-h-screen py-10 relative">
       {/* Delete Confirmation Modal */}
       {eventToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in">
           <Card className="max-w-md w-full animate-in zoom-in-95">
             <CardContent className="p-6">
                 <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-red-100 rounded-full flex-shrink-0">
+                <div className="p-3 bg-red-100 rounded-full shrink-0">
                     <AlertTriangle className="w-6 h-6 text-red-600" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-900">Delete Event?</h3>
