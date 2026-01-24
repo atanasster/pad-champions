@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   createBrowserRouter,
   RouterProvider,
@@ -6,17 +6,17 @@ import {
   Route,
   Outlet,
   ScrollRestoration,
-} from "react-router-dom";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
-import HomePage from "./pages/HomePage";
-import ScreeningLocator from "./pages/ScreeningLocator";
-import EventCalendar from "./pages/EventCalendar";
-import RiskAssessment from "./pages/RiskAssessment";
-import LearnPAD from "./pages/LearnPAD";
-import Volunteer from "./pages/Volunteer";
-import About from "./pages/About";
-import AIScreening from "./pages/AIScreening";
+} from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import HomePage from './pages/HomePage';
+import ScreeningLocator from './pages/ScreeningLocator';
+import EventCalendar from './pages/EventCalendar';
+import RiskAssessment from './pages/RiskAssessment';
+import LearnPAD from './pages/LearnPAD';
+import Volunteer from './pages/Volunteer';
+import About from './pages/About';
+import AIScreening from './pages/AIScreening';
 
 const Layout = () => {
   return (

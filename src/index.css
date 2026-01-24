@@ -102,25 +102,30 @@
     --ring: 346 100% 38%;
     --radius: 0.5rem;
   }
-  
+
   body {
     font-family: 'Open Sans', sans-serif;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'Merriweather', serif;
   }
-  
+
   /* FullCalendar Brand Overrides */
   :root {
-    --fc-button-bg-color: #C2002F;
-    --fc-button-border-color: #C2002F;
+    --fc-button-bg-color: #c2002f;
+    --fc-button-border-color: #c2002f;
     --fc-button-hover-bg-color: #9f0026;
     --fc-button-hover-border-color: #9f0026;
     --fc-button-active-bg-color: #7a001e;
     --fc-button-active-border-color: #7a001e;
-    --fc-event-bg-color: #C2002F;
-    --fc-event-border-color: #C2002F;
+    --fc-event-bg-color: #c2002f;
+    --fc-event-border-color: #c2002f;
     --fc-today-bg-color: #fff1f2;
     --fc-page-bg-color: #ffffff;
     --fc-neutral-bg-color: #f1f5f9;
@@ -131,7 +136,7 @@
     font-family: 'Merriweather', serif;
     font-size: 1.5rem;
   }
-  
+
   .fc .fc-col-header-cell-cushion {
     padding-top: 10px;
     padding-bottom: 10px;
@@ -145,7 +150,7 @@
     font-weight: 600;
     color: #334155;
   }
-  
+
   @media (max-width: 768px) {
     .fc .fc-toolbar {
       flex-direction: column;
@@ -156,4 +161,3 @@
     }
   }
 }
-

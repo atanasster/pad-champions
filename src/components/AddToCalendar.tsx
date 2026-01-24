@@ -26,33 +26,33 @@ const AddToCalendar: React.FC<AddToCalendarProps> = ({ event, className = '' }) 
   const getEventDates = () => {
     // Expected date format: "YYYY-MM-DD"
     // Expected time format: "09:00 AM - 02:00 PM"
-    
+
     try {
-      const [startTimeStr, endTimeStr] = event.time.split('-').map(s => s.trim());
-      
+      const [startTimeStr, endTimeStr] = event.time.split('-').map((s) => s.trim());
+
       const parseTime = (dateString: string, timeString: string) => {
         const [time, modifier] = timeString.split(' ');
-        let [hours, minutes] = time.split(':').map(Number);
-        
+        const [h, minutes] = time.split(':').map(Number);
+        let hours = h;
         if (modifier === 'PM' && hours < 12) hours += 12;
         if (modifier === 'AM' && hours === 12) hours = 0;
-        
+
         const date = new Date(dateString);
         date.setHours(hours, minutes, 0);
         return date;
       };
 
       // We parse against the event date. Note: This creates a Date object in the user's local timezone.
-      // Ideally, we'd handle timezones explicitly, but for a local event app, local browser time is usually sufficient 
+      // Ideally, we'd handle timezones explicitly, but for a local event app, local browser time is usually sufficient
       // or we assume the event is in the user's timezone context.
       // To strictly avoid timezone shifting for "floating" times, we construct strings manually below for the links.
-      
+
       const startDate = parseTime(event.date + 'T00:00:00', startTimeStr);
       const endDate = parseTime(event.date + 'T00:00:00', endTimeStr);
 
       return { startDate, endDate };
     } catch (e) {
-      console.error("Error parsing event dates", e);
+      console.error('Error parsing event dates', e);
       return { startDate: new Date(), endDate: new Date() };
     }
   };
@@ -69,7 +69,7 @@ const AddToCalendar: React.FC<AddToCalendarProps> = ({ event, className = '' }) 
     const end = formatForLink(endDate);
     const details = `Screening Event at ${event.venueName}. Type: ${event.type}`;
     const location = `${event.address}, ${event.zip}`;
-    
+
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.name)}&dates=${start}/${end}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}`;
   };
 
@@ -104,7 +104,7 @@ const AddToCalendar: React.FC<AddToCalendarProps> = ({ event, className = '' }) 
       `DESCRIPTION:Screening Event at ${event.venueName} (${event.type})`,
       `LOCATION:${event.address}, ${event.zip}`,
       'END:VEVENT',
-      'END:VCALENDAR'
+      'END:VCALENDAR',
     ].join('\n');
 
     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
@@ -127,7 +127,9 @@ const AddToCalendar: React.FC<AddToCalendarProps> = ({ event, className = '' }) 
       >
         <Calendar className="mr-2 h-5 w-5" />
         Add to Calendar
-        <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          className={`ml-2 h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {isOpen && (

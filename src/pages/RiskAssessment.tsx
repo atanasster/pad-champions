@@ -7,11 +7,11 @@ import { Button } from '../components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 
 const QUESTIONS: QuizQuestion[] = [
-  { id: 1, text: "Do you smoke or have you smoked in the past?", weight: 2 },
-  { id: 2, text: "Do you have diabetes?", weight: 2 },
-  { id: 3, text: "Are you over the age of 50?", weight: 1 },
-  { id: 4, text: "Do your legs feel tired, heavy, or cramp when you walk?", weight: 3 },
-  { id: 5, text: "Do you have high blood pressure or high cholesterol?", weight: 1 },
+  { id: 1, text: 'Do you smoke or have you smoked in the past?', weight: 2 },
+  { id: 2, text: 'Do you have diabetes?', weight: 2 },
+  { id: 3, text: 'Are you over the age of 50?', weight: 1 },
+  { id: 4, text: 'Do your legs feel tired, heavy, or cramp when you walk?', weight: 3 },
+  { id: 5, text: 'Do you have high blood pressure or high cholesterol?', weight: 1 },
 ];
 
 const RiskAssessment: React.FC = () => {
@@ -57,12 +57,14 @@ const RiskAssessment: React.FC = () => {
             {!isCompleted ? (
               <div className="text-center">
                 <div className="mb-10">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">Question {currentQuestionIndex + 1} of {QUESTIONS.length}</span>
-                    <h2 className="text-2xl md:text-3xl font-bold text-brand-dark mt-6 leading-relaxed font-serif">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">
+                    Question {currentQuestionIndex + 1} of {QUESTIONS.length}
+                  </span>
+                  <h2 className="text-2xl md:text-3xl font-bold text-brand-dark mt-6 leading-relaxed font-serif">
                     {QUESTIONS[currentQuestionIndex].text}
-                    </h2>
+                  </h2>
                 </div>
-                
+
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button
                     onClick={() => handleAnswer(true)}
@@ -82,20 +84,24 @@ const RiskAssessment: React.FC = () => {
             ) : (
               <div className="text-center animate-in fade-in zoom-in-95 duration-300">
                 {isHighRisk ? (
-                  <Alert variant="destructive" className="bg-red-50 border-red-200 mb-8 p-8 text-center">
+                  <Alert
+                    variant="destructive"
+                    className="bg-red-50 border-red-200 mb-8 p-8 text-center"
+                  >
                     <div className="flex flex-col items-center">
                       <AlertCircle className="h-16 w-16 text-brand-red mb-4" />
-                      <AlertTitle className="text-3xl font-bold text-brand-red mb-4 font-serif">You May Be At Risk</AlertTitle>
+                      <AlertTitle className="text-3xl font-bold text-brand-red mb-4 font-serif">
+                        You May Be At Risk
+                      </AlertTitle>
                       <AlertDescription className="text-slate-800 text-lg mb-8 leading-relaxed">
-                        Based on your answers, you have factors common in people with leg artery blockages. We strongly recommend getting a free screening.
+                        Based on your answers, you have factors common in people with leg artery
+                        blockages. We strongly recommend getting a free screening.
                       </AlertDescription>
                       <Button
                         asChild
                         className="w-full sm:w-auto bg-brand-red hover:bg-red-800 text-lg font-bold h-14 px-8"
                       >
-                        <Link to="/screenings">
-                          Find a Screening Near You
-                        </Link>
+                        <Link to="/screenings">Find a Screening Near You</Link>
                       </Button>
                     </div>
                   </Alert>
@@ -103,47 +109,48 @@ const RiskAssessment: React.FC = () => {
                   <Alert className="bg-green-50 border-green-200 mb-8 p-8 text-center">
                     <div className="flex flex-col items-center">
                       <CheckCircle className="h-16 w-16 text-green-600 mb-4" />
-                      <AlertTitle className="text-3xl font-bold text-green-700 mb-4 font-serif">Low Risk</AlertTitle>
+                      <AlertTitle className="text-3xl font-bold text-green-700 mb-4 font-serif">
+                        Low Risk
+                      </AlertTitle>
                       <AlertDescription className="text-slate-800 text-lg mb-8 leading-relaxed">
-                        Your answers suggest a lower risk, but it's always good to stay informed. Keep your legs healthy by walking daily!
+                        Your answers suggest a lower risk, but it's always good to stay informed.
+                        Keep your legs healthy by walking daily!
                       </AlertDescription>
                       <Button
                         asChild
                         className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-lg font-bold h-14 px-8"
                       >
-                        <Link to="/learn">
-                          Learn More About Leg Health
-                        </Link>
+                        <Link to="/learn">Learn More About Leg Health</Link>
                       </Button>
                     </div>
                   </Alert>
                 )}
-                
+
                 <Button
-                    variant="ghost"
-                    onClick={resetQuiz}
-                    className="text-slate-500 hover:text-slate-800"
+                  variant="ghost"
+                  onClick={resetQuiz}
+                  className="text-slate-500 hover:text-slate-800"
                 >
-                    Retake Quiz
+                  Retake Quiz
                 </Button>
               </div>
             )}
           </CardContent>
-          
+
           {/* Progress Bar */}
           {!isCompleted && (
-              <div className="w-full bg-slate-100 h-2">
-                  <div 
-                    className="bg-brand-red h-2 transition-all duration-300 ease-out" 
-                    style={{width: `${((currentQuestionIndex + 1) / QUESTIONS.length) * 100}%`}}
-                  ></div>
-              </div>
+            <div className="w-full bg-slate-100 h-2">
+              <div
+                className="bg-brand-red h-2 transition-all duration-300 ease-out"
+                style={{ width: `${((currentQuestionIndex + 1) / QUESTIONS.length) * 100}%` }}
+              ></div>
+            </div>
           )}
         </Card>
-        
+
         <p className="text-center text-slate-500 text-sm mt-8">
-            Disclaimer: This tool provides information only and does not constitute medical advice or diagnosis. 
-            Always consult with a healthcare professional for medical concerns.
+          Disclaimer: This tool provides information only and does not constitute medical advice or
+          diagnosis. Always consult with a healthcare professional for medical concerns.
         </p>
       </div>
     </div>

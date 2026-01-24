@@ -1,9 +1,24 @@
 import React, { useState } from 'react';
-import { GoogleGenAI } from "@google/genai";
-import { Upload, Brain, FileText, Activity, AlertTriangle, Terminal, CheckCircle, Zap } from 'lucide-react';
+
+import {
+  Upload,
+  Brain,
+  FileText,
+  Activity,
+  AlertTriangle,
+  Terminal,
+  CheckCircle,
+  Zap,
+} from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Alert, AlertDescription } from '../components/ui/alert';
@@ -12,19 +27,22 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 // Pricing estimates per 1M tokens
-const MODEL_CONFIG: Record<string, { label: string; inputCost: number; outputCost: number; description: string }> = {
+const MODEL_CONFIG: Record<
+  string,
+  { label: string; inputCost: number; outputCost: number; description: string }
+> = {
   'gemini-2.5-flash': {
     label: 'Gemini 2.5 Flash',
-    inputCost: 0.10,
-    outputCost: 0.40,
-    description: 'Fast, cost-effective model for standard screenings.'
+    inputCost: 0.1,
+    outputCost: 0.4,
+    description: 'Fast, cost-effective model for standard screenings.',
   },
   'gemini-3-pro-preview': {
     label: 'Gemini 3.0 Pro (Preview)',
-    inputCost: 2.00,
-    outputCost: 8.00,
-    description: 'Advanced reasoning for complex medical histories.'
-  }
+    inputCost: 2.0,
+    outputCost: 8.0,
+    description: 'Advanced reasoning for complex medical histories.',
+  },
 };
 
 const AIScreening: React.FC = () => {
@@ -52,7 +70,7 @@ const AIScreening: React.FC = () => {
       // 1. Validate File Size (Max 20MB)
       const MAX_SIZE = 20 * 1024 * 1024; // 20MB
       if (file.size > MAX_SIZE) {
-        setError("File is too large. Please upload a file smaller than 20MB.");
+        setError('File is too large. Please upload a file smaller than 20MB.');
         setSelectedFile(null);
         setFilePreview(null);
         e.target.value = ''; // Reset input
@@ -62,9 +80,9 @@ const AIScreening: React.FC = () => {
       // 2. Validate File Extension
       const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf', 'txt', 'docx'];
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
-      
+
       if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
-        setError("Unsupported file type. Please upload JPG, PNG, PDF, DOCX, or TXT.");
+        setError('Unsupported file type. Please upload JPG, PNG, PDF, DOCX, or TXT.');
         setSelectedFile(null);
         setFilePreview(null);
         e.target.value = ''; // Reset input
@@ -73,7 +91,7 @@ const AIScreening: React.FC = () => {
 
       // File is valid
       setSelectedFile(file);
-      
+
       // Create preview if it's an image
       if (file.type.startsWith('image/') || ['jpg', 'jpeg', 'png'].includes(fileExtension)) {
         const reader = new FileReader();
@@ -92,7 +110,8 @@ const AIScreening: React.FC = () => {
     const ext = file.name.split('.').pop()?.toLowerCase();
     if (ext === 'pdf') return 'application/pdf';
     if (ext === 'txt') return 'text/plain';
-    if (ext === 'docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    if (ext === 'docx')
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
     if (ext === 'png') return 'image/png';
     return 'application/octet-stream';
@@ -119,7 +138,7 @@ const AIScreening: React.FC = () => {
 
   const handleAnalyze = async () => {
     if (!medicalHistory && !selectedFile) {
-      setError("Please provide medical history or upload a file.");
+      setError('Please provide medical history or upload a file.');
       return;
     }
 
@@ -131,78 +150,59 @@ const AIScreening: React.FC = () => {
     const currentModelConfig = MODEL_CONFIG[selectedModel];
 
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error("GEMINI_API_KEY is not configured. Please check your .env file.");
-      }
-      const ai = new GoogleGenAI({ apiKey });
-      
-      const parts: any[] = [];
-      
-      if (medicalHistory) {
-        parts.push({ text: `Patient History/Symptoms: ${medicalHistory}` });
-      }
+      // Connect to the Firebase Function
+      const { httpsCallable } = await import('firebase/functions');
+      const { functions } = await import('../lib/firebase');
+
+      // Functions instance is already configured (emulator or prod) in firebase.ts
+
+      const analyzePatientData = httpsCallable(functions, 'analyzePatientData');
+
+      // Convert file to base64 if needed
+      let fileData = null;
+      let mimeType = null;
 
       if (selectedFile) {
         const filePart = await fileToGenerativePart(selectedFile);
-        parts.push(filePart);
-        parts.push({ text: "I have uploaded a file (image, PDF, DOCX, or TXT) containing my lab results or leg condition. Please analyze it." });
+        fileData = filePart.inlineData.data;
+        mimeType = filePart.inlineData.mimeType;
       }
 
-      const systemPrompt = `
-        You are an expert vascular specialist assistant for the CHAMPIONS Limb Preservation Network.
-        Your goal is to screen for Peripheral Artery Disease (PAD) risks.
-        
-        Analyze the provided medical notes and/or file uploads (which may be blood work results, medical reports, or photos of legs/feet).
-        
-        Provide a response in the following structure:
-        1. **Risk Assessment**: High, Medium, or Low. Explain why.
-        2. **Key Observations**: Bullet points of what you found in the text or file.
-        3. **Lifestyle Recommendations**: 3-4 actionable tips.
-        4. **Action Plan**: Specifically, should they see a doctor? (Yes/No/Urgent).
-
-        IMPORTANT: If the file is unclear or not medical, politely say so.
-        Disclaimer: Start your response with "AI Assessment (Not a Diagnosis):".
-      `;
-
-      const result = await ai.models.generateContentStream({
+      const result = await analyzePatientData({
+        medicalHistory,
+        file: fileData,
+        mimeType: mimeType,
         model: selectedModel,
-        contents: {
-          parts: parts
-        },
-        config: {
-          systemInstruction: systemPrompt,
-          temperature: 0.2, // Low temperature for more factual/consistent medical advice
-        }
       });
 
-      let accumulatedText = '';
-      
-      // Iterate over the stream
-      for await (const chunk of result) {
-        const chunkText = chunk.text;
-        if (chunkText) {
-          accumulatedText += chunkText;
-          setAnalysis(accumulatedText);
-        }
-        
-        // Check for usage metadata in the final chunk or wherever it appears
-        if (chunk.usageMetadata) {
-            const input = chunk.usageMetadata.promptTokenCount || 0;
-            const output = chunk.usageMetadata.candidatesTokenCount || 0;
-            const cost = ((input / 1000000) * currentModelConfig.inputCost) + ((output / 1000000) * currentModelConfig.outputCost);
-            
-            setUsageStats({
-              inputTokens: input,
-              outputTokens: output,
-              totalCost: cost
-            });
-        }
+      const data = result.data as {
+        text: string;
+        usageMetadata?: { promptTokenCount: number; candidatesTokenCount: number };
+      };
+
+      if (data.text) {
+        setAnalysis(data.text);
+      } else {
+        throw new Error('No analysis text returned');
       }
 
-    } catch (err: any) {
+      if (data.usageMetadata) {
+        const input = data.usageMetadata.promptTokenCount || 0;
+        const output = data.usageMetadata.candidatesTokenCount || 0;
+        const cost =
+          (input / 1000000) * currentModelConfig.inputCost +
+          (output / 1000000) * currentModelConfig.outputCost;
+
+        setUsageStats({
+          inputTokens: input,
+          outputTokens: output,
+          totalCost: cost,
+        });
+      }
+    } catch (err: unknown) {
       console.error(err);
-      setError("Failed to generate analysis. Please try again. " + (err.message || ""));
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError('Failed to generate analysis. Please try again. ' + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -211,7 +211,6 @@ const AIScreening: React.FC = () => {
   return (
     <div className="bg-slate-50 min-h-screen py-10 px-4">
       <div className="max-w-5xl mx-auto">
-        
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-brand-dark mb-2 font-serif flex items-center gap-3">
             <Brain className="h-10 w-10 text-brand-red" />
@@ -223,7 +222,6 @@ const AIScreening: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
           {/* Input Section */}
           <div className="space-y-6">
             <Card className="border-t-4 border-t-brand-dark shadow-md">
@@ -231,28 +229,32 @@ const AIScreening: React.FC = () => {
                 <CardTitle>Patient Data</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                
                 {/* Model Selection */}
                 <div>
-                   <Label className="block text-slate-700 mb-2 flex items-center justify-between">
-                     <span className="flex items-center"><Zap className="w-4 h-4 mr-1 text-slate-500"/> AI Model</span>
-                     <span className="text-xs text-slate-400 font-normal">Pricing varies by model</span>
-                   </Label>
-                   <Select value={selectedModel} onValueChange={setSelectedModel}>
-                     <SelectTrigger className="font-medium text-brand-dark border-slate-300">
-                       <SelectValue placeholder="Select a model" />
-                     </SelectTrigger>
-                     <SelectContent>
-                       {Object.entries(MODEL_CONFIG).map(([key, config]) => (
-                         <SelectItem key={key} value={key}>
-                           {config.label} (${config.inputCost.toFixed(2)}/1M in, ${config.outputCost.toFixed(2)}/1M out)
-                         </SelectItem>
-                       ))}
-                     </SelectContent>
-                   </Select>
-                   <p className="text-xs text-slate-500 mt-2">
-                       {MODEL_CONFIG[selectedModel].description}
-                   </p>
+                  <Label className="block text-slate-700 mb-2 flex items-center justify-between">
+                    <span className="flex items-center">
+                      <Zap className="w-4 h-4 mr-1 text-slate-500" /> AI Model
+                    </span>
+                    <span className="text-xs text-slate-400 font-normal">
+                      Pricing varies by model
+                    </span>
+                  </Label>
+                  <Select value={selectedModel} onValueChange={setSelectedModel}>
+                    <SelectTrigger className="font-medium text-brand-dark border-slate-300">
+                      <SelectValue placeholder="Select a model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(MODEL_CONFIG).map(([key, config]) => (
+                        <SelectItem key={key} value={key}>
+                          {config.label} (${config.inputCost.toFixed(2)}/1M in, $
+                          {config.outputCost.toFixed(2)}/1M out)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-slate-500 mt-2">
+                    {MODEL_CONFIG[selectedModel].description}
+                  </p>
                 </div>
 
                 <div className="border-t border-slate-100 pt-4">
@@ -283,7 +285,7 @@ const AIScreening: React.FC = () => {
                     <div className="flex flex-col items-center">
                       <Upload className="h-8 w-8 text-slate-400 mb-2" />
                       <span className="text-sm text-slate-600 font-medium">
-                        {selectedFile ? "Change file" : "Click to upload file"}
+                        {selectedFile ? 'Change file' : 'Click to upload file'}
                       </span>
                       <span className="text-xs text-slate-400 mt-1">
                         JPG, PNG, PDF, DOCX, TXT (Max 20MB)
@@ -292,26 +294,37 @@ const AIScreening: React.FC = () => {
                   </div>
                   {selectedFile && (
                     <div className="mt-4 relative w-full h-40 bg-slate-100 rounded overflow-hidden border border-slate-200 flex items-center justify-center">
-                      <Badge variant="outline" className="absolute top-2 left-2 bg-green-100 text-green-700 border-green-200 shadow-xs z-10">
+                      <Badge
+                        variant="outline"
+                        className="absolute top-2 left-2 bg-green-100 text-green-700 border-green-200 shadow-xs z-10"
+                      >
                         <CheckCircle className="w-3 h-3 mr-1" /> Ready for Analysis
                       </Badge>
-                      
+
                       {selectedFile.type.startsWith('image/') && filePreview ? (
-                        <img 
-                          src={filePreview} 
-                          alt="Preview" 
+                        <img
+                          src={filePreview}
+                          alt="Preview"
                           className="w-full h-full object-contain"
                         />
                       ) : (
                         <div className="flex flex-col items-center text-slate-500">
                           <FileText className="h-12 w-12 mb-2" />
                           <span className="text-sm font-medium">{selectedFile.name}</span>
-                          <span className="text-xs uppercase mt-1">{selectedFile.type.split('/')[1] || selectedFile.name.split('.').pop()?.toUpperCase() || 'DOC'}</span>
+                          <span className="text-xs uppercase mt-1">
+                            {selectedFile.type.split('/')[1] ||
+                              selectedFile.name.split('.').pop()?.toUpperCase() ||
+                              'DOC'}
+                          </span>
                         </div>
                       )}
                       <Button
                         type="button"
-                        onClick={() => { setSelectedFile(null); setFilePreview(null); setError(null); }}
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setFilePreview(null);
+                          setError(null);
+                        }}
                         className="absolute top-2 right-2 h-6 w-6 rounded-full p-0 shadow-xs z-10"
                         title="Remove file"
                         variant="destructive"
@@ -325,14 +338,12 @@ const AIScreening: React.FC = () => {
                 {error && (
                   <Alert variant="destructive" className="bg-red-50 border-red-100">
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription className="text-red-700">
-                      {error}
-                    </AlertDescription>
+                    <AlertDescription className="text-red-700">{error}</AlertDescription>
                   </Alert>
                 )}
 
-                <Button 
-                  onClick={handleAnalyze} 
+                <Button
+                  onClick={handleAnalyze}
                   disabled={loading}
                   className="w-full h-12 text-lg font-bold bg-brand-red hover:bg-red-800"
                 >
@@ -365,11 +376,15 @@ const AIScreening: React.FC = () => {
                       <div className="grid grid-cols-2 gap-4 text-center mb-4">
                         <div className="p-3 bg-slate-800 rounded-lg">
                           <div className="text-xs text-slate-500 uppercase mb-1">Input Tokens</div>
-                          <div className="text-xl font-mono font-bold text-white">{usageStats.inputTokens.toLocaleString()}</div>
+                          <div className="text-xl font-mono font-bold text-white">
+                            {usageStats.inputTokens.toLocaleString()}
+                          </div>
                         </div>
                         <div className="p-3 bg-slate-800 rounded-lg">
                           <div className="text-xs text-slate-500 uppercase mb-1">Output Tokens</div>
-                          <div className="text-xl font-mono font-bold text-white">{usageStats.outputTokens.toLocaleString()}</div>
+                          <div className="text-xl font-mono font-bold text-white">
+                            {usageStats.outputTokens.toLocaleString()}
+                          </div>
                         </div>
                       </div>
                       <div className="p-3 bg-slate-800 rounded-lg border border-brand-red/30 relative overflow-hidden">
@@ -387,18 +402,19 @@ const AIScreening: React.FC = () => {
                 )}
 
                 <p className="text-xs text-slate-500 text-center">
-                  By using this tool, you acknowledge that this is an AI simulation and not a substitute for professional medical advice.
+                  By using this tool, you acknowledge that this is an AI simulation and not a
+                  substitute for professional medical advice.
                 </p>
-
               </CardContent>
             </Card>
           </div>
 
           {/* Results Section */}
           <div className="space-y-6">
-            
             {/* Analysis Result */}
-            <Card className={`h-full border-t-4 border-t-brand-red shadow-md transition-opacity duration-500 ${loading ? 'opacity-50' : 'opacity-100'}`}>
+            <Card
+              className={`h-full border-t-4 border-t-brand-red shadow-md transition-opacity duration-500 ${loading ? 'opacity-50' : 'opacity-100'}`}
+            >
               <CardHeader className="bg-slate-50 border-b border-slate-100">
                 <CardTitle className="flex items-center text-brand-dark">
                   <FileText className="mr-2 h-5 w-5" />
@@ -411,37 +427,105 @@ const AIScreening: React.FC = () => {
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        h1: ({node, ...props}) => <h1 className="text-2xl font-serif font-bold text-brand-dark mb-4 mt-6 first:mt-0" {...props} />,
-                        h2: ({node, ...props}) => <h2 className="text-xl font-serif font-bold text-brand-dark mb-3 mt-5 first:mt-0" {...props} />,
-                        h3: ({node, ...props}) => <h3 className="text-lg font-serif font-bold text-brand-dark mb-2 mt-4 first:mt-0" {...props} />,
-                        h4: ({node, ...props}) => <h4 className="text-base font-serif font-bold text-brand-dark mb-2 mt-3 first:mt-0" {...props} />,
-                        p: ({node, ...props}) => <p className="mb-3 text-slate-700 leading-relaxed" {...props} />,
-                        ul: ({node, ...props}) => <ul className="mb-4 ml-6 list-disc space-y-2 text-slate-700" {...props} />,
-                        ol: ({node, ...props}) => <ol className="mb-4 ml-6 list-decimal space-y-2 text-slate-700" {...props} />,
-                        li: ({node, ...props}) => <li className="leading-relaxed" {...props} />,
-                        strong: ({node, ...props}) => <strong className="font-bold text-brand-dark" {...props} />,
-                        em: ({node, ...props}) => <em className="italic" {...props} />,
-                        a: ({node, ...props}) => <a className="text-brand-red hover:underline" {...props} />,
-                        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-brand-red pl-4 my-4 italic text-slate-600" {...props} />,
-                        code: ({node, inline, ...props}: any) => 
+                        h1: ({ ...props }) => (
+                          <h1
+                            className="text-2xl font-serif font-bold text-brand-dark mb-4 mt-6 first:mt-0"
+                            {...props}
+                          />
+                        ),
+                        h2: ({ ...props }) => (
+                          <h2
+                            className="text-xl font-serif font-bold text-brand-dark mb-3 mt-5 first:mt-0"
+                            {...props}
+                          />
+                        ),
+                        h3: ({ ...props }) => (
+                          <h3
+                            className="text-lg font-serif font-bold text-brand-dark mb-2 mt-4 first:mt-0"
+                            {...props}
+                          />
+                        ),
+                        h4: ({ ...props }) => (
+                          <h4
+                            className="text-base font-serif font-bold text-brand-dark mb-2 mt-3 first:mt-0"
+                            {...props}
+                          />
+                        ),
+                        p: ({ ...props }) => (
+                          <p className="mb-3 text-slate-700 leading-relaxed" {...props} />
+                        ),
+                        ul: ({ ...props }) => (
+                          <ul className="mb-4 ml-6 list-disc space-y-2 text-slate-700" {...props} />
+                        ),
+                        ol: ({ ...props }) => (
+                          <ol
+                            className="mb-4 ml-6 list-decimal space-y-2 text-slate-700"
+                            {...props}
+                          />
+                        ),
+                        li: ({ ...props }) => <li className="leading-relaxed" {...props} />,
+                        strong: ({ ...props }) => (
+                          <strong className="font-bold text-brand-dark" {...props} />
+                        ),
+                        em: ({ ...props }) => <em className="italic" {...props} />,
+                        a: ({ ...props }) => (
+                          <a className="text-brand-red hover:underline" {...props} />
+                        ),
+                        blockquote: ({ ...props }) => (
+                          <blockquote
+                            className="border-l-4 border-brand-red pl-4 my-4 italic text-slate-600"
+                            {...props}
+                          />
+                        ),
+                        code: ({
+                          inline,
+                          ...props
+                        }: {
+                          inline?: boolean;
+                          className?: string;
+                          children?: React.ReactNode;
+                        }) =>
                           inline ? (
-                            <code className="bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono text-brand-dark" {...props} />
+                            <code
+                              className="bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono text-brand-dark"
+                              {...props}
+                            />
                           ) : (
-                            <code className="block bg-slate-100 p-4 rounded-lg text-sm font-mono text-brand-dark overflow-x-auto mb-4" {...props} />
+                            <code
+                              className="block bg-slate-100 p-4 rounded-lg text-sm font-mono text-brand-dark overflow-x-auto mb-4"
+                              {...props}
+                            />
                           ),
-                        pre: ({node, ...props}) => <pre className="mb-4" {...props} />,
-                        table: ({node, ...props}) => (
+                        pre: ({ ...props }) => <pre className="mb-4" {...props} />,
+                        table: ({ ...props }) => (
                           <div className="overflow-x-auto my-4">
-                            <table className="min-w-full border-collapse border border-slate-300 rounded-lg" {...props} />
+                            <table
+                              className="min-w-full border-collapse border border-slate-300 rounded-lg"
+                              {...props}
+                            />
                           </div>
                         ),
-                        thead: ({node, ...props}) => <thead className="bg-slate-100" {...props} />,
-                        tbody: ({node, ...props}) => <tbody {...props} />,
-                        tr: ({node, ...props}) => <tr className="border-b border-slate-200 hover:bg-slate-50" {...props} />,
-                        th: ({node, ...props}) => <th className="border border-slate-300 px-4 py-2 text-left font-bold text-brand-dark font-serif" {...props} />,
-                        td: ({node, ...props}) => <td className="border border-slate-300 px-4 py-2 text-slate-700" {...props} />,
-                        img: ({node, ...props}) => <img className="max-w-full h-auto rounded-lg my-4 shadow-md" {...props} />,
-                        hr: ({node, ...props}) => <hr className="my-6 border-slate-300" {...props} />,
+                        thead: ({ ...props }) => <thead className="bg-slate-100" {...props} />,
+                        tbody: ({ ...props }) => <tbody {...props} />,
+                        tr: ({ ...props }) => (
+                          <tr className="border-b border-slate-200 hover:bg-slate-50" {...props} />
+                        ),
+                        th: ({ ...props }) => (
+                          <th
+                            className="border border-slate-300 px-4 py-2 text-left font-bold text-brand-dark font-serif"
+                            {...props}
+                          />
+                        ),
+                        td: ({ ...props }) => (
+                          <td
+                            className="border border-slate-300 px-4 py-2 text-slate-700"
+                            {...props}
+                          />
+                        ),
+                        img: ({ ...props }) => (
+                          <img className="max-w-full h-auto rounded-lg my-4 shadow-md" {...props} />
+                        ),
+                        hr: ({ ...props }) => <hr className="my-6 border-slate-300" {...props} />,
                       }}
                     >
                       {analysis}
@@ -455,10 +539,8 @@ const AIScreening: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-
           </div>
         </div>
-
       </div>
     </div>
   );
