@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, ChevronDown, Download, ExternalLink } from 'lucide-react';
 import { ScreeningEvent } from '../types';
 
+import { Button } from './ui/button';
+
 interface AddToCalendarProps {
   event: ScreeningEvent;
   className?: string;
@@ -119,18 +121,21 @@ const AddToCalendar: React.FC<AddToCalendarProps> = ({ event, className = '' }) 
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
-      <button
+      <Button
+        variant="outline"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-center bg-white border-2 border-slate-300 hover:bg-slate-50 text-slate-700 font-bold py-3 px-4 rounded-lg transition-colors"
+        className="w-full justify-between"
         aria-haspopup="true"
         aria-expanded={isOpen}
       >
-        <Calendar className="mr-2 h-5 w-5" />
-        Add to Calendar
+        <span className="flex items-center">
+          <Calendar className="mr-2 h-4 w-4" />
+          Add to Calendar
+        </span>
         <ChevronDown
           className={`ml-2 h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
-      </button>
+      </Button>
 
       {isOpen && (
         <div className="absolute right-0 bottom-full mb-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20 overflow-hidden animate-fade-in">

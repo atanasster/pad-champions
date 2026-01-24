@@ -1,16 +1,18 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import * as logger from 'firebase-functions/logger';
 import { db, auth } from './init';
 
 // Helper to check if requester is admin
-const assertAdmin = (request: any) => {
+const assertAdmin = (request: CallableRequest) => {
   if (request.auth?.token?.role !== 'admin') {
     throw new HttpsError('permission-denied', 'Only admins can perform this action');
   }
 };
 
+import { defaultCallOpts } from './config';
+
 // Explicitly allow the frontend origin
-export const listUsers = onCall({ cors: ["http://localhost:3001"] }, async (request) => {
+export const listUsers = onCall(defaultCallOpts, async (request) => {
   assertAdmin(request);
 
   try {
@@ -25,7 +27,7 @@ export const listUsers = onCall({ cors: ["http://localhost:3001"] }, async (requ
         const authUser = await auth.getUser(uid);
         
         // Prepare updates if Auth has fresh data
-        const updates: any = {};
+        const updates: Record<string, string> = {};
         if (userData.email !== authUser.email && authUser.email) updates.email = authUser.email;
         if (userData.displayName !== authUser.displayName && authUser.displayName) updates.displayName = authUser.displayName;
         if (userData.photoURL !== authUser.photoURL && authUser.photoURL) updates.photoURL = authUser.photoURL;
@@ -68,7 +70,7 @@ export const listUsers = onCall({ cors: ["http://localhost:3001"] }, async (requ
   }
 });
 
-export const setUserRole = onCall({ cors: ["http://localhost:3001"] }, async (request) => {
+export const setUserRole = onCall(defaultCallOpts, async (request) => {
   assertAdmin(request);
 
   const { targetUid, newRole } = request.data;

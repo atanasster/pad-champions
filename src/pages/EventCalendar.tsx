@@ -1,4 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../lib/firebase';
 import { EventContentArg, EventClickArg } from '@fullcalendar/core';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -18,8 +20,8 @@ import {
   Landmark,
   Trash2,
   AlertTriangle,
+  Loader2,
 } from 'lucide-react';
-import { MOCK_EVENTS } from '../data/mockData';
 import { ScreeningEvent } from '../types';
 import AddToCalendar from '../components/AddToCalendar';
 import { Card, CardContent } from '../components/ui/card';
@@ -81,12 +83,13 @@ const getVenueStyle = (type: string) => {
 };
 
 const EventCalendar: React.FC = () => {
-  // Initialize with MOCK_EVENTS but allow updates
-  const [events, setEvents] = useState<ScreeningEvent[]>(MOCK_EVENTS);
+  // Initialize with empty events
+  const [events, setEvents] = useState<ScreeningEvent[]>([]);
   const [selectedEvents, setSelectedEvents] = useState<ScreeningEvent[]>([]);
   const [selectedDateLabel, setSelectedDateLabel] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false); // Acts as "Admin Mode" toggle
   const [eventToDelete, setEventToDelete] = useState<ScreeningEvent | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Form State
   const [formData, setFormData] = useState<Omit<ScreeningEvent, 'id' | 'coordinates'>>({
@@ -101,6 +104,23 @@ const EventCalendar: React.FC = () => {
 
   // Create a ref if we need to access calendar API later
   const calendarRef = useRef<FullCalendar>(null);
+
+  const fetchEvents = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const getEventsFn = httpsCallable<void, { events: ScreeningEvent[] }>(functions, 'getEvents');
+      const result = await getEventsFn();
+      setEvents(result.data.events);
+    } catch (error) {
+      console.error('Error fetching calendar events:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
 
   // Map our data to FullCalendar event format
   const calendarEvents = events.map((event) => {
@@ -430,27 +450,33 @@ const EventCalendar: React.FC = () => {
         {/* Calendar Container */}
         <Card className="mb-8 overflow-hidden shadow-lg border border-slate-200">
           <CardContent className="p-4 md:p-6">
-            <FullCalendar
-              ref={calendarRef}
-              plugins={[dayGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
-              initialDate={
-                events.length > 0 ? events[0].date : new Date().toISOString().split('T')[0]
-              }
-              headerToolbar={{
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth',
-              }}
-              events={calendarEvents}
-              eventContent={renderEventContent}
-              dateClick={handleDateClick}
-              eventClick={handleEventClick}
-              height="auto"
-              contentHeight="auto"
-              fixedWeekCount={false}
-              dayMaxEvents={true}
-            />
+            {isLoading ? (
+              <div className="flex justify-center items-center h-96">
+                <Loader2 className="w-8 h-8 animate-spin text-brand-blue" />
+              </div>
+            ) : (
+              <FullCalendar
+                ref={calendarRef}
+                plugins={[dayGridPlugin, interactionPlugin]}
+                initialView="dayGridMonth"
+                initialDate={
+                  events.length > 0 ? events[0].date : new Date().toISOString().split('T')[0]
+                }
+                headerToolbar={{
+                  left: 'prev,next today',
+                  center: 'title',
+                  right: 'dayGridMonth',
+                }}
+                events={calendarEvents}
+                eventContent={renderEventContent}
+                dateClick={handleDateClick}
+                eventClick={handleEventClick}
+                height="auto"
+                contentHeight="auto"
+                fixedWeekCount={false}
+                dayMaxEvents={true}
+              />
+            )}
           </CardContent>
         </Card>
 

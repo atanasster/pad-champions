@@ -66,5 +66,8 @@ export const analyzePatientData = onRequest({ cors: true }, async (req, res) => 
 export { onUserCreated } from './userTriggers';
 export { listUsers, setUserRole } from './userManagement';
 
+// Event Management Exports
+export { getEvents, manageEvent, seedEvents } from './events';
+
 
 

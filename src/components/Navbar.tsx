@@ -111,7 +111,7 @@ const Navbar: React.FC = () => {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {userRole === 'admin' && (
+                  {(userRole === 'admin' || userRole === 'moderator') && (
                     <DropdownMenuItem onClick={() => navigate('/admin')}>
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       <span>Admin Console</span>

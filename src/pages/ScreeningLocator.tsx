@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { MapPin, Calendar, Clock, Navigation, Search, Filter } from 'lucide-react';
-import { MOCK_EVENTS } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { MapPin, Calendar, Clock, Navigation, Search, Filter, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../lib/firebase';
+import { ScreeningEvent } from '../types';
 import AddToCalendar from '../components/AddToCalendar';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -18,12 +20,46 @@ import { Label } from '../components/ui/label';
 const ScreeningLocator: React.FC = () => {
   const [zipFilter, setZipFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('All');
+  const [events, setEvents] = useState<ScreeningEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
-  const filteredEvents = MOCK_EVENTS.filter((event) => {
-    const matchesZip = event.zip.includes(zipFilter);
-    const matchesType = typeFilter === 'All' || event.type === typeFilter;
-    return matchesZip && matchesType;
-  });
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setLoading(true);
+      try {
+        const getEventsFn = httpsCallable<void, { events: ScreeningEvent[] }>(functions, 'getEvents');
+        const result = await getEventsFn();
+        setEvents(result.data.events);
+      } catch (error) {
+        console.error('Error fetching events:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  const filteredEvents = events
+    .filter((event) => {
+      const matchesZip = event.zip.includes(zipFilter);
+      const matchesType = typeFilter === 'All' || event.type === typeFilter;
+      return matchesZip && matchesType;
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+  const paginatedEvents = filteredEvents.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [zipFilter, typeFilter]);
 
   return (
     <div className="bg-slate-50 min-h-screen py-10">
@@ -74,7 +110,11 @@ const ScreeningLocator: React.FC = () => {
 
         {/* Results List */}
         <div className="space-y-6">
-          {filteredEvents.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+               <Loader2 className="w-10 h-10 animate-spin text-brand-red" />
+            </div>
+          ) : filteredEvents.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-slate-300">
               <p className="text-xl text-slate-500 mb-4">
                 No screenings found matching your criteria.
@@ -91,7 +131,7 @@ const ScreeningLocator: React.FC = () => {
               </Button>
             </div>
           ) : (
-            filteredEvents.map((event) => (
+            paginatedEvents.map((event) => (
               <Card
                 key={event.id}
                 className="overflow-hidden border-l-8 border-l-brand-red transition-shadow hover:shadow-md"
@@ -160,6 +200,31 @@ const ScreeningLocator: React.FC = () => {
                 </CardContent>
               </Card>
             ))
+          )}
+
+          {/* Pagination Controls */}
+          {filteredEvents.length > 0 && (
+            <div className="flex justify-center items-center gap-4 py-8">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                Previous
+              </Button>
+              <span className="text-slate-600 font-medium">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
           )}
         </div>
       </div>

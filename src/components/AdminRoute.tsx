@@ -9,7 +9,7 @@ const AdminRoute = () => {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
-  if (!currentUser || userRole !== 'admin') {
+  if (!currentUser || (userRole !== 'admin' && userRole !== 'moderator')) {
     // Redirect non-admins to home or login
     return <Navigate to="/" replace />;
   }
