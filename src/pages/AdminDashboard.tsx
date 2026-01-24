@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../lib/firebase';
 import { UserData, UserRole } from '../types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 
 const AdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<UserData[]>([]);
@@ -114,19 +121,25 @@ const AdminDashboard: React.FC = () => {
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td className="p-4">
-                    <select
+                    <div className="flex items-center gap-2">
+                    <Select
                       value={user.role}
-                      onChange={(e) => handleRoleChange(user.uid, e.target.value as UserRole)}
+                      onValueChange={(value) => handleRoleChange(user.uid, value as UserRole)}
                       disabled={updating === user.uid}
-                      className="text-sm border-slate-300 rounded focus:ring-indigo-500 focus:border-indigo-500 bg-white"
                     >
-                      <option value="volunteer">Volunteer</option>
-                      <option value="moderator">Moderator</option>
-                      <option value="admin">Admin</option>
-                    </select>
+                      <SelectTrigger className="w-[130px]">
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="volunteer">Volunteer</SelectItem>
+                        <SelectItem value="moderator">Moderator</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
                     {updating === user.uid && (
                       <span className="ml-2 text-xs text-indigo-500">Saving...</span>
                     )}
+                    </div>
                   </td>
                 </tr>
               ))}

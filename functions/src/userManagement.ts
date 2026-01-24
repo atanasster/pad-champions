@@ -17,9 +17,48 @@ export const listUsers = onCall({ cors: ["http://localhost:3001"] }, async (requ
     // In a real app with many users, implement pagination
     const snapshot = await db.collection('users').orderBy('createdAt', 'desc').limit(100).get();
 
-    const users = snapshot.docs.map((doc) => ({
-      uid: doc.id,
-      ...doc.data(),
+    const users = await Promise.all(snapshot.docs.map(async (doc) => {
+      const userData = doc.data();
+      const uid = doc.id;
+
+      try {
+        const authUser = await auth.getUser(uid);
+        
+        // Prepare updates if Auth has fresh data
+        const updates: any = {};
+        if (userData.email !== authUser.email && authUser.email) updates.email = authUser.email;
+        if (userData.displayName !== authUser.displayName && authUser.displayName) updates.displayName = authUser.displayName;
+        if (userData.photoURL !== authUser.photoURL && authUser.photoURL) updates.photoURL = authUser.photoURL;
+        
+        // Sync creation time if available
+        if (authUser.metadata.creationTime) {
+            const authCreation = new Date(authUser.metadata.creationTime).toISOString();
+            if (userData.createdAt !== authCreation) {
+                updates.createdAt = authCreation;
+            }
+        }
+
+        if (Object.keys(updates).length > 0) {
+          logger.info(`Syncing user profile for ${uid}`, updates);
+          // Fire and forget update
+          db.collection('users').doc(uid).update(updates).catch(err => 
+            logger.error(`Failed to sync user updates for ${uid}`, err)
+          );
+          
+          return {
+            uid,
+            ...userData,
+            ...updates
+          };
+        }
+      } catch (authError) {
+        logger.warn(`Failed to fetch Auth record for user ${uid}`, authError);
+      }
+
+      return {
+        uid,
+        ...userData,
+      };
     }));
 
     return { users };
