@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Activity, CalendarCheck, ArrowRight } from 'lucide-react';
+import { MapPin, Activity } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
+
 
 const HomePage: React.FC = () => {
   return (
