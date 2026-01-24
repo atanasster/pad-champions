@@ -148,15 +148,16 @@ const AIScreening: React.FC = () => {
     setUsageStats(null);
 
     const currentModelConfig = MODEL_CONFIG[selectedModel];
+    
+    // Clear previous analysis
+    setAnalysis('');
 
     try {
-      // Connect to the Firebase Function
-      const { httpsCallable } = await import('firebase/functions');
-      const { functions } = await import('../lib/firebase');
-
-      // Functions instance is already configured (emulator or prod) in firebase.ts
-
-      const analyzePatientData = httpsCallable(functions, 'analyzePatientData');
+      // Determine URL based on environment
+      // In production, you might need to update this URL to your deployed function URL
+      const FUNCTION_URL = import.meta.env.DEV
+        ? 'http://localhost:5001/pad-champions/us-central1/analyzePatientData'
+        : 'https://us-central1-pad-champions.cloudfunctions.net/analyzePatientData';
 
       // Convert file to base64 if needed
       let fileData = null;
@@ -168,37 +169,44 @@ const AIScreening: React.FC = () => {
         mimeType = filePart.inlineData.mimeType;
       }
 
-      const result = await analyzePatientData({
-        medicalHistory,
-        file: fileData,
-        mimeType: mimeType,
-        model: selectedModel,
+      const response = await fetch(FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data: {
+            medicalHistory,
+            file: fileData,
+            mimeType,
+            model: selectedModel,
+          },
+        }),
       });
 
-      const data = result.data as {
-        text: string;
-        usageMetadata?: { promptTokenCount: number; candidatesTokenCount: number };
-      };
-
-      if (data.text) {
-        setAnalysis(data.text);
-      } else {
-        throw new Error('No analysis text returned');
+      if (!response.body) {
+        throw new Error('Response body is unavailable');
       }
 
-      if (data.usageMetadata) {
-        const input = data.usageMetadata.promptTokenCount || 0;
-        const output = data.usageMetadata.candidatesTokenCount || 0;
-        const cost =
-          (input / 1000000) * currentModelConfig.inputCost +
-          (output / 1000000) * currentModelConfig.outputCost;
-
-        setUsageStats({
-          inputTokens: input,
-          outputTokens: output,
-          totalCost: cost,
-        });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server error: ${response.status} ${errorText}`);
       }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunkValue = decoder.decode(value, { stream: true });
+        setAnalysis((prev) => prev + chunkValue);
+      }
+      
+      // We don't have usage stats in streaming mode easily unless we send it as a final chunk or header
+      // For now, we'll skip setting precise usage stats or estimate them
+      
     } catch (err: unknown) {
       console.error(err);
       const errorMessage = err instanceof Error ? err.message : String(err);
