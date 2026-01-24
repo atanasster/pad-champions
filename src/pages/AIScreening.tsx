@@ -147,7 +147,7 @@ const AIScreening: React.FC = () => {
     setAnalysis('');
     setUsageStats(null);
 
-    const currentModelConfig = MODEL_CONFIG[selectedModel];
+    // const currentModelConfig = MODEL_CONFIG[selectedModel];
     
     // Clear previous analysis
     setAnalysis('');
