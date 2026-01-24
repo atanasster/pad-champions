@@ -17,6 +17,11 @@ import LearnPAD from './pages/LearnPAD';
 import Volunteer from './pages/Volunteer';
 import About from './pages/About';
 import AIScreening from './pages/AIScreening';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
+import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider } from './contexts/AuthContext';
 
 const Layout = () => {
   return (
@@ -35,6 +40,7 @@ const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Layout />}>
       <Route index element={<HomePage />} />
+      <Route path="login" element={<Login />} />
       <Route path="screenings" element={<ScreeningLocator />} />
       <Route path="calendar" element={<EventCalendar />} />
       <Route path="quiz" element={<RiskAssessment />} />
@@ -42,12 +48,22 @@ const router = createBrowserRouter(
       <Route path="learn" element={<LearnPAD />} />
       <Route path="volunteer" element={<Volunteer />} />
       <Route path="about" element={<About />} />
+
+      {/* Protected Routes */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="profile" element={<Profile />} />
+      </Route>
     </Route>,
   ),
 );
 
 const App: React.FC = () => {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 };
 
 export default App;

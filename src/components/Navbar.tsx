@@ -1,8 +1,18 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, HeartPulse } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, HeartPulse, User, LogOut, LayoutDashboard } from 'lucide-react';
 import { NavItem } from '../types';
 import { Button } from './ui/button';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 const navItems: NavItem[] = [
   { label: 'Home', path: '/' },
@@ -18,8 +28,19 @@ const navItems: NavItem[] = [
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { currentUser, logout } = useAuth();
 
   const closeMenu = () => setIsOpen(false);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to log out', error);
+    }
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-xs font-sans">
@@ -75,18 +96,61 @@ const Navbar: React.FC = () => {
             ))}
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="flex items-center lg:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-slate-600 hover:text-brand-red hover:bg-slate-100"
-              aria-expanded={isOpen}
-            >
-              <span className="sr-only">Open main menu</span>
-              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </Button>
+          <div className="flex items-center gap-4">
+            {currentUser ? (
+               <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                   <Avatar>
+                     <AvatarImage src={currentUser.photoURL || ''} alt={currentUser.displayName || 'User'} />
+                     <AvatarFallback>{currentUser.displayName ? currentUser.displayName[0] : 'U'}</AvatarFallback>
+                   </Avatar>
+                 </Button>
+               </DropdownMenuTrigger>
+               <DropdownMenuContent className="w-56" align="end" forceMount>
+                 <DropdownMenuLabel className="font-normal">
+                   <div className="flex flex-col space-y-1">
+                     <p className="text-sm font-medium leading-none">{currentUser.displayName}</p>
+                     <p className="text-xs leading-none text-muted-foreground">
+                       {currentUser.email}
+                     </p>
+                   </div>
+                 </DropdownMenuLabel>
+                 <DropdownMenuSeparator />
+                 <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                   <LayoutDashboard className="mr-2 h-4 w-4" />
+                   <span>Dashboard</span>
+                 </DropdownMenuItem>
+                 <DropdownMenuItem onClick={() => navigate('/profile')}>
+                   <User className="mr-2 h-4 w-4" />
+                   <span>Profile</span>
+                 </DropdownMenuItem>
+                 <DropdownMenuSeparator />
+                 <DropdownMenuItem onClick={handleLogout}>
+                   <LogOut className="mr-2 h-4 w-4" />
+                   <span>Log out</span>
+                 </DropdownMenuItem>
+               </DropdownMenuContent>
+             </DropdownMenu>
+            ) : (
+              <Link to="/login" className="hidden lg:block">
+                <Button variant="outline" size="sm">Log In</Button>
+              </Link>
+            )}
+
+            {/* Mobile Menu Button */}
+            <div className="flex items-center lg:hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsOpen(!isOpen)}
+                className="text-slate-600 hover:text-brand-red hover:bg-slate-100"
+                aria-expanded={isOpen}
+              >
+                <span className="sr-only">Open main menu</span>
+                {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -109,6 +173,42 @@ const Navbar: React.FC = () => {
                 {item.label}
               </Link>
             ))}
+            {!currentUser && (
+               <Link
+               to="/login"
+               onClick={closeMenu}
+               className="block px-4 py-3 rounded text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-red"
+             >
+               Log In
+             </Link>
+            )}
+             {currentUser && (
+              <>
+                 <Link
+                  to="/dashboard"
+                   onClick={closeMenu}
+                   className="block px-4 py-3 rounded text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-red"
+                 >
+                   Dashboard
+                 </Link>
+                 <Link
+                   to="/profile"
+                   onClick={closeMenu}
+                   className="block px-4 py-3 rounded text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-red"
+                 >
+                   Profile
+                 </Link>
+                 <div
+                   onClick={() => {
+                    handleLogout();
+                    closeMenu();
+                   }}
+                   className="block px-4 py-3 rounded text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-red cursor-pointer"
+                 >
+                   Log Out
+                 </div>
+              </>
+            )}
           </div>
         </div>
       )}
