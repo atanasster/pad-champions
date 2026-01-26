@@ -1,7 +1,6 @@
-
 import * as admin from 'firebase-admin';
 
-// Initialize the app. 
+// Initialize the app.
 // If generic functionality is needed, ensure GOOGLE_APPLICATION_CREDENTIALS is set,
 // or run this in an environment authorized to access the project.
 // If testing locally with emulators, set FIREBASE_AUTH_EMULATOR_HOST / FIRESTORE_EMULATOR_HOST env vars.
@@ -31,7 +30,9 @@ async function makeAdmin(targetUid: string) {
     await db.collection('users').doc(targetUid).set({ role: 'admin' }, { merge: true });
     console.log(`✅ Firestore 'users/${targetUid}' role updated.`);
 
-    console.log('SUCCESS: User is now an admin. They may need to sign out and back in to refresh their token.');
+    console.log(
+      'SUCCESS: User is now an admin. They may need to sign out and back in to refresh their token.',
+    );
   } catch (error) {
     console.error('ERROR making user admin:', error);
     process.exit(1);

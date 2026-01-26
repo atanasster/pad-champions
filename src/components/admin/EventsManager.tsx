@@ -8,28 +8,21 @@ import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { DatePicker } from '../ui/date-picker';
 import { Loader2, Plus, Trash2, Edit, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 import { ConfirmationModal } from '../ui/confirmation-modal';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "../ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 
 // Define Zod Schema
 const eventSchema = z.object({
-  name: z.string().min(2, "Event name must be at least 2 characters."),
-  venueName: z.string().min(2, "Venue name must be at least 2 characters."),
+  name: z.string().min(2, 'Event name must be at least 2 characters.'),
+  venueName: z.string().min(2, 'Venue name must be at least 2 characters.'),
   type: z.enum(['Community Center', 'Barbershop', 'Church', 'Pharmacy']),
   date: z.date(),
-  time: z.string().min(1, "Time is required (e.g., 10:00 AM - 02:00 PM)"),
-  address: z.string().min(5, "Address must be at least 5 characters."),
-  zip: z.string().regex(/^\d{5}$/, "Zip code must be 5 digits."),
+  time: z.string().min(1, 'Time is required (e.g., 10:00 AM - 02:00 PM)'),
+  address: z.string().min(5, 'Address must be at least 5 characters.'),
+  zip: z.string().regex(/^\d{5}$/, 'Zip code must be 5 digits.'),
 });
 
 interface EventsManagerProps {
@@ -43,7 +36,10 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
   const [view, setView] = useState<'list' | 'form'>('list');
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [sortConfig, setSortConfig] = useState<{ key: keyof ScreeningEvent; direction: 'asc' | 'desc' } | null>({ key: 'date', direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof ScreeningEvent;
+    direction: 'asc' | 'desc';
+  } | null>({ key: 'date', direction: 'desc' });
 
   const sortedEvents = React.useMemo(() => {
     const sortableItems = [...events];
@@ -83,12 +79,12 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
-      name: "",
-      venueName: "",
-      type: "Community Center",
-      time: "",
-      address: "",
-      zip: "",
+      name: '',
+      venueName: '',
+      type: 'Community Center',
+      time: '',
+      address: '',
+      zip: '',
     },
   });
 
@@ -107,19 +103,25 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
   });
 
   const closeModal = () => {
-    setModal(prev => ({ ...prev, isOpen: false }));
+    setModal((prev) => ({ ...prev, isOpen: false }));
     if (modal.onCloseCallback) {
       modal.onCloseCallback();
     }
   };
 
-  const showConfirm = (title: string, message: string, onConfirm: () => void, variant: 'default' | 'destructive' = 'default', confirmText = 'Confirm') => {
+  const showConfirm = (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    variant: 'default' | 'destructive' = 'default',
+    confirmText = 'Confirm',
+  ) => {
     setModal({
       isOpen: true,
       title,
       message,
       onConfirm: async () => {
-        setModal(prev => ({ ...prev, isOpen: false }));
+        setModal((prev) => ({ ...prev, isOpen: false }));
         await onConfirm();
       },
       variant,
@@ -159,13 +161,10 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
   // Actually, simplest fix for the "function used before defined" issue if we move it:
   // Just disable the exhaustive-deps line for the useEffect seeing as fetchEvents is meant to be called on mount.
 
-
   useEffect(() => {
     fetchEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-
 
   const handleDelete = (id: string) => {
     showConfirm(
@@ -173,7 +172,7 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
       'Are you sure you want to delete this event?',
       () => executeDelete(id),
       'destructive',
-      'Delete'
+      'Delete',
     );
   };
 
@@ -182,7 +181,7 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
     try {
       const manageEventFn = httpsCallable(functions, 'manageEvent');
       await manageEventFn({ action: 'delete', eventId: id });
-      setEvents(events.filter(e => e.id !== id));
+      setEvents(events.filter((e) => e.id !== id));
       showAlert('Success', 'Event deleted successfully');
     } catch (error) {
       console.error('Error deleting event:', error);
@@ -194,33 +193,33 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
   };
 
   const handleEdit = (event: ScreeningEvent) => {
-    console.log("Editing event:", event); // Debug
+    console.log('Editing event:', event); // Debug
     setEditingId(event.id || null);
-    
+
     // Reset form with values. Ensure date is a Date object.
     form.reset({
       name: event.name,
       venueName: event.venueName,
-      type: event.type as "Community Center" | "Barbershop" | "Church" | "Pharmacy",
+      type: event.type as 'Community Center' | 'Barbershop' | 'Church' | 'Pharmacy',
       date: new Date(event.date), // critical conversion
       time: event.time,
       address: event.address,
       zip: event.zip,
     });
-    
+
     setView('form');
   };
 
   const handleAddNew = () => {
     setEditingId(null);
     form.reset({
-      name: "",
-      venueName: "",
-      type: "Community Center",
+      name: '',
+      venueName: '',
+      type: 'Community Center',
       date: undefined,
-      time: "",
-      address: "",
-      zip: "",
+      time: '',
+      address: '',
+      zip: '',
     });
     setView('form');
   };
@@ -230,21 +229,21 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
     try {
       const manageEventFn = httpsCallable(functions, 'manageEvent');
       const action = editingId ? 'update' : 'create';
-      
+
       const payloadData: Partial<ScreeningEvent> = {
         ...values,
         date: values.date.toISOString().split('T')[0],
-        coordinates: { lat: 37.8044, lng: -122.2712 }
+        coordinates: { lat: 37.8044, lng: -122.2712 },
       };
 
       const payload = {
         action,
         eventPayload: payloadData,
-        eventId: editingId
+        eventId: editingId,
       };
-      
+
       await manageEventFn(payload);
-      
+
       showAlert('Success', `Event ${editingId ? 'updated' : 'created'} successfully!`, () => {
         setView('list');
         fetchEvents();
@@ -269,13 +268,14 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
                 <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Event Name <span className="text-red-500">*</span></FormLabel>
+                      <FormLabel>
+                        Event Name <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input placeholder="Health Fair..." {...field} />
                       </FormControl>
@@ -289,7 +289,9 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
                   name="venueName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Venue Name <span className="text-red-500">*</span></FormLabel>
+                      <FormLabel>
+                        Venue Name <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input placeholder="Community Hall..." {...field} />
                       </FormControl>
@@ -303,7 +305,9 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Venue Type <span className="text-red-500">*</span></FormLabel>
+                      <FormLabel>
+                        Venue Type <span className="text-red-500">*</span>
+                      </FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -327,11 +331,10 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
                   name="date"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Date <span className="text-red-500">*</span></FormLabel>
-                      <DatePicker
-                        date={field.value}
-                        setDate={field.onChange}
-                      />
+                      <FormLabel>
+                        Date <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <DatePicker date={field.value} setDate={field.onChange} />
                       <FormMessage />
                     </FormItem>
                   )}
@@ -342,7 +345,9 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
                   name="time"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Time <span className="text-red-500">*</span></FormLabel>
+                      <FormLabel>
+                        Time <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input placeholder="10:00 AM - 02:00 PM" {...field} />
                       </FormControl>
@@ -356,7 +361,9 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
                   name="zip"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Zip Code <span className="text-red-500">*</span></FormLabel>
+                      <FormLabel>
+                        Zip Code <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input placeholder="94612" {...field} />
                       </FormControl>
@@ -371,7 +378,9 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
                     name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Address <span className="text-red-500">*</span></FormLabel>
+                        <FormLabel>
+                          Address <span className="text-red-500">*</span>
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder="123 Main St..." {...field} />
                         </FormControl>
@@ -383,7 +392,7 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
 
                 {/* Lat/Lng inputs removed as per request */}
               </div>
-              
+
               <div className="flex justify-end gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={() => setView('list')}>
                   Cancel
@@ -420,7 +429,9 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
         <Card>
           <CardContent className="flex flex-col items-center justify-center p-12 text-slate-500">
             <p>No events found.</p>
-            <Button variant="link" onClick={handleAddNew}>Create your first event</Button>
+            <Button variant="link" onClick={handleAddNew}>
+              Create your first event
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -428,25 +439,37 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
           <table className="w-full text-left">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="p-4 font-medium text-slate-500 text-sm cursor-pointer hover:text-slate-700 transition-colors" onClick={() => requestSort('name')}>
+                <th
+                  className="p-4 font-medium text-slate-500 text-sm cursor-pointer hover:text-slate-700 transition-colors"
+                  onClick={() => requestSort('name')}
+                >
                   <div className="flex items-center">
                     Event Name
                     {getSortIcon('name')}
                   </div>
                 </th>
-                <th className="p-4 font-medium text-slate-500 text-sm cursor-pointer hover:text-slate-700 transition-colors" onClick={() => requestSort('date')}>
+                <th
+                  className="p-4 font-medium text-slate-500 text-sm cursor-pointer hover:text-slate-700 transition-colors"
+                  onClick={() => requestSort('date')}
+                >
                   <div className="flex items-center">
                     Date
                     {getSortIcon('date')}
                   </div>
                 </th>
-                <th className="p-4 font-medium text-slate-500 text-sm cursor-pointer hover:text-slate-700 transition-colors" onClick={() => requestSort('venueName')}>
+                <th
+                  className="p-4 font-medium text-slate-500 text-sm cursor-pointer hover:text-slate-700 transition-colors"
+                  onClick={() => requestSort('venueName')}
+                >
                   <div className="flex items-center">
                     Venue
                     {getSortIcon('venueName')}
                   </div>
                 </th>
-                <th className="p-4 font-medium text-slate-500 text-sm cursor-pointer hover:text-slate-700 transition-colors" onClick={() => requestSort('type')}>
+                <th
+                  className="p-4 font-medium text-slate-500 text-sm cursor-pointer hover:text-slate-700 transition-colors"
+                  onClick={() => requestSort('type')}
+                >
                   <div className="flex items-center">
                     Type
                     {getSortIcon('type')}
@@ -467,13 +490,13 @@ const EventsManager: React.FC<EventsManagerProps> = () => {
                     </span>
                   </td>
                   <td className="p-4 text-right">
-                    <button 
+                    <button
                       onClick={() => handleEdit(event)}
                       className="text-slate-400 hover:text-indigo-600 mr-3"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
-                    <button 
+                    <button
                       onClick={() => event.id && handleDelete(event.id)}
                       className="text-slate-400 hover:text-red-600"
                     >

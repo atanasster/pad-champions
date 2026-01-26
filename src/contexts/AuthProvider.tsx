@@ -18,7 +18,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Force refresh to get the latest claims (e.g. after admin promotion)
           const idTokenResult = await user.getIdTokenResult(true);
           const role = (idTokenResult.claims.role as UserRole) || 'volunteer';
-          console.log("AuthProvider - User Role:", role); 
+          console.log('AuthProvider - User Role:', role);
           setUserRole(role);
         } catch (error) {
           console.error('Error fetching user role:', error);
@@ -66,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     signInWithGoogle,
     logout,
-    refreshUser
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;

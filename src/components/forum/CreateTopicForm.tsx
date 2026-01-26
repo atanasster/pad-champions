@@ -38,7 +38,8 @@ export const CreateTopicForm: React.FC<CreateTopicFormProps> = ({ onCancel, onSu
       onSuccess();
     } catch (err: unknown) {
       console.error('Failed to create post:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create topic. Please try again.';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to create topic. Please try again.';
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -48,12 +49,8 @@ export const CreateTopicForm: React.FC<CreateTopicFormProps> = ({ onCancel, onSu
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
       <h3 className="text-xl font-semibold mb-6">Start a New Discussion</h3>
-      
-      {error && (
-        <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm mb-4">
-          {error}
-        </div>
-      )}
+
+      {error && <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm mb-4">{error}</div>}
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div>
@@ -65,8 +62,8 @@ export const CreateTopicForm: React.FC<CreateTopicFormProps> = ({ onCancel, onSu
             id="title"
             type="text"
             className={cn(
-              "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#c2002f] focus:border-transparent",
-              form.formState.errors.title ? "border-red-500" : "border-gray-300"
+              'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#c2002f] focus:border-transparent',
+              form.formState.errors.title ? 'border-red-500' : 'border-gray-300',
             )}
             placeholder="What's on your mind?"
           />
@@ -76,7 +73,7 @@ export const CreateTopicForm: React.FC<CreateTopicFormProps> = ({ onCancel, onSu
         </div>
 
         <div>
-           <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
             Content
           </label>
           <textarea
@@ -84,12 +81,12 @@ export const CreateTopicForm: React.FC<CreateTopicFormProps> = ({ onCancel, onSu
             id="content"
             rows={5}
             className={cn(
-               "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#c2002f] focus:border-transparent",
-               form.formState.errors.content ? "border-red-500" : "border-gray-300"
+              'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#c2002f] focus:border-transparent',
+              form.formState.errors.content ? 'border-red-500' : 'border-gray-300',
             )}
             placeholder="Share your thoughts details..."
           />
-           {form.formState.errors.content && (
+          {form.formState.errors.content && (
             <p className="mt-1 text-xs text-red-500">{form.formState.errors.content.message}</p>
           )}
         </div>

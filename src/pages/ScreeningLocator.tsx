@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Calendar, Clock, Navigation, Search, Filter, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  MapPin,
+  Calendar,
+  Clock,
+  Navigation,
+  Search,
+  Filter,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../lib/firebase';
 import { ScreeningEvent } from '../types';
@@ -29,7 +39,10 @@ const ScreeningLocator: React.FC = () => {
     const fetchEvents = async () => {
       setLoading(true);
       try {
-        const getEventsFn = httpsCallable<void, { events: ScreeningEvent[] }>(functions, 'getEvents');
+        const getEventsFn = httpsCallable<void, { events: ScreeningEvent[] }>(
+          functions,
+          'getEvents',
+        );
         const result = await getEventsFn();
         setEvents(result.data.events);
       } catch (error) {
@@ -53,7 +66,7 @@ const ScreeningLocator: React.FC = () => {
   const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
   const paginatedEvents = filteredEvents.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   // Reset page when filters change
@@ -112,7 +125,7 @@ const ScreeningLocator: React.FC = () => {
         <div className="space-y-6">
           {loading ? (
             <div className="flex justify-center items-center py-12">
-               <Loader2 className="w-10 h-10 animate-spin text-brand-red" />
+              <Loader2 className="w-10 h-10 animate-spin text-brand-red" />
             </div>
           ) : filteredEvents.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-slate-300">

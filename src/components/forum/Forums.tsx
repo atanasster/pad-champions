@@ -17,19 +17,15 @@ export const Forums: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Determine sort order - sticking to "Latest Activity" essentially (newest posts first, 
+    // Determine sort order - sticking to "Latest Activity" essentially (newest posts first,
     // ideally we'd sort by lastCommentAt but we might need a composite index for that)
     // For now, sorting by createdAt desc.
-    const q = query(
-      collection(db, 'posts'),
-      orderBy('createdAt', 'desc'),
-      limit(50)
-    );
+    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(50));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedPosts = snapshot.docs.map(doc => ({
+      const fetchedPosts = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       })) as ForumPost[];
       setPosts(fetchedPosts);
       setLoading(false);
@@ -43,27 +39,22 @@ export const Forums: React.FC = () => {
   };
 
   const handlePostRead = (post: ForumPost) => {
-      setSelectedPost(post);
-      setView('detail');
+    setSelectedPost(post);
+    setView('detail');
   };
 
   if (view === 'create') {
-    return (
-      <CreateTopicForm 
-        onCancel={() => setView('list')} 
-        onSuccess={handleCreateSuccess} 
-      />
-    );
+    return <CreateTopicForm onCancel={() => setView('list')} onSuccess={handleCreateSuccess} />;
   }
 
   if (view === 'detail' && selectedPost) {
     return (
-      <TopicDetail 
-        post={selectedPost} 
+      <TopicDetail
+        post={selectedPost}
         onBack={() => {
-            setSelectedPost(null);
-            setView('list');
-        }} 
+          setSelectedPost(null);
+          setView('list');
+        }}
       />
     );
   }
@@ -84,11 +75,7 @@ export const Forums: React.FC = () => {
         </button>
       </div>
 
-      <TopicList 
-        posts={posts} 
-        isLoading={loading} 
-        onSelectPost={handlePostRead} 
-      />
+      <TopicList posts={posts} isLoading={loading} onSelectPost={handlePostRead} />
     </div>
   );
 };

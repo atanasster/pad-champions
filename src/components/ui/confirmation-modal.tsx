@@ -34,25 +34,15 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <Card className="shadow-lg border-opacity-50">
           <CardHeader>
             <CardTitle>{title}</CardTitle>
-            <CardDescription className="pt-2">
-              {message}
-            </CardDescription>
+            <CardDescription className="pt-2">{message}</CardDescription>
           </CardHeader>
           <CardFooter className="flex justify-end gap-3">
             {onConfirm ? (
               <>
-                <Button 
-                  variant="outline" 
-                  onClick={onClose} 
-                  disabled={isLoading}
-                >
+                <Button variant="outline" onClick={onClose} disabled={isLoading}>
                   {cancelText}
                 </Button>
-                <Button 
-                  variant={variant} 
-                  onClick={onConfirm}
-                  disabled={isLoading}
-                >
+                <Button variant={variant} onClick={onConfirm} disabled={isLoading}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {confirmText}
                 </Button>

@@ -152,23 +152,23 @@ const AdminDashboard: React.FC = () => {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
-                      <Select
-                        value={user.role}
-                        onValueChange={(value) => handleRoleChange(user.uid, value as UserRole)}
-                        disabled={updating === user.uid}
-                      >
-                        <SelectTrigger className="w-[130px]">
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="volunteer">Volunteer</SelectItem>
-                          <SelectItem value="moderator">Moderator</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {updating === user.uid && (
-                        <span className="ml-2 text-xs text-indigo-500">Saving...</span>
-                      )}
+                        <Select
+                          value={user.role}
+                          onValueChange={(value) => handleRoleChange(user.uid, value as UserRole)}
+                          disabled={updating === user.uid}
+                        >
+                          <SelectTrigger className="w-[130px]">
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="volunteer">Volunteer</SelectItem>
+                            <SelectItem value="moderator">Moderator</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {updating === user.uid && (
+                          <span className="ml-2 text-xs text-indigo-500">Saving...</span>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -181,8 +181,8 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       ) : (
-        <EventsManager userRole={users.find(u => u.uid === updating)?.role || 'admin'} /> // Pass assumed role or current user role. 
-        // Note: We don't strictly know current user role here in this component without auth context, 
+        <EventsManager userRole={users.find((u) => u.uid === updating)?.role || 'admin'} /> // Pass assumed role or current user role.
+        // Note: We don't strictly know current user role here in this component without auth context,
         // but typically AdminDashboard is guarded. We'll pass 'admin' for now or fetch current user mechanism.
         // Better: Fetch current user claims or profile.
       )}

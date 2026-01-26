@@ -56,9 +56,9 @@ const About: React.FC = () => {
               />
               <div>
                 <blockquote className="italic text-slate-600 text-lg mb-4">
-                  "We cannot wait for patients to come to the hospital when their legs are already
-                  in danger. We must go to them, shake their hands, and listen to their stories in
-                  the places they feel safe."
+                  "We cannot afford to wait for patients to come to the hospital. Preventing limb
+                  loss and disability means stepping into the spaces people live, where they feel
+                  seen and safe, listening to their stories, and acting before it's too late."
                 </blockquote>
                 <p className="font-bold text-brand-dark font-serif text-lg">
                   — Dr. O'Banion, Founder

@@ -37,10 +37,8 @@ export const TopicList: React.FC<TopicListProps> = ({ posts, onSelectPost, isLoa
               <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#c2002f] mb-2">
                 {post.title}
               </h3>
-              <p className="text-gray-600 line-clamp-2 mb-4 text-sm">
-                {post.content}
-              </p>
-              
+              <p className="text-gray-600 line-clamp-2 mb-4 text-sm">{post.content}</p>
+
               <div className="flex items-center text-xs text-gray-500 space-x-4">
                 <div className="flex items-center">
                   <User className="w-3 h-3 mr-1" />
@@ -48,13 +46,18 @@ export const TopicList: React.FC<TopicListProps> = ({ posts, onSelectPost, isLoa
                 </div>
                 <div className="flex items-center">
                   <Clock className="w-3 h-3 mr-1" />
-                  {post.createdAt?.toDate ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
+                  {post.createdAt?.toDate
+                    ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true })
+                    : 'Just now'}
                 </div>
                 {post.lastCommentAt && (
-                   <div className="hidden sm:flex items-center text-gray-400">
+                  <div className="hidden sm:flex items-center text-gray-400">
                     <span className="mx-2">•</span>
-                    Last activity {post.lastCommentAt?.toDate ? formatDistanceToNow(post.lastCommentAt.toDate(), { addSuffix: true }) : ''}
-                   </div>
+                    Last activity{' '}
+                    {post.lastCommentAt?.toDate
+                      ? formatDistanceToNow(post.lastCommentAt.toDate(), { addSuffix: true })
+                      : ''}
+                  </div>
                 )}
               </div>
             </div>
@@ -64,7 +67,7 @@ export const TopicList: React.FC<TopicListProps> = ({ posts, onSelectPost, isLoa
                 <MessageSquare className="w-3 h-3 mr-1.5" />
                 {post.commentCount}
               </div>
-               <div className="flex items-center text-gray-500 bg-gray-50 px-3 py-1 rounded-full text-xs font-medium">
+              <div className="flex items-center text-gray-500 bg-gray-50 px-3 py-1 rounded-full text-xs font-medium">
                 <Heart className="w-3 h-3 mr-1.5" />
                 {post.likeCount}
               </div>

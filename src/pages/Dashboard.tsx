@@ -23,12 +23,12 @@ const Dashboard: React.FC = () => {
           </Card>
           {/* Add more widgets or content here */}
         </div>
-        
+
         <div className="md:col-span-1 lg:col-span-2">
-           <Notifications />
+          <Notifications />
         </div>
       </div>
-      
+
       <div className="border-t border-gray-200 pt-8">
         <Forums />
       </div>
