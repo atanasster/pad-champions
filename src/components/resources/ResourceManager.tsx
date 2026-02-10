@@ -144,7 +144,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
     };
     
     reconstructPath();
-  }, [currentFolderId]); // Only run when folder changes
+  }, [currentFolderId, folderPath]); // Only run when folder changes
 
 
   const handleCreateFolder = async () => {

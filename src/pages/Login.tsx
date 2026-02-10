@@ -56,7 +56,9 @@ const Login: React.FC = () => {
     try {
       setError('');
       await signInWithGoogle();
-    } catch (error: any) {
+    } catch (err: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const error = err as any;
       console.error('Failed to log in with Google', error);
       setError('Failed to log in with Google. Please try again.');
     }
@@ -72,7 +74,9 @@ const Login: React.FC = () => {
       } else {
         await signInWithEmail(data.email, data.password);
       }
-    } catch (error: any) {
+    } catch (err: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const error = err as any;
       console.error('Authentication failed', error);
       let errorMessage = 'Failed to authenticate. Please check your credentials.';
       if (error.code === 'auth/email-already-in-use') {

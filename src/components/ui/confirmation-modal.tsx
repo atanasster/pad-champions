@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from './button';
-import { Card, CardFooter, CardHeader, CardTitle, CardDescription } from './card';
+import { Card, CardFooter, CardHeader, CardTitle } from './card';
 import { Loader2 } from 'lucide-react';
 
 interface ConfirmationModalProps {
