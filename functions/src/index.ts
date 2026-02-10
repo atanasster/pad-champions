@@ -75,3 +75,12 @@ export { onReplyCreated } from './forumTriggers';
 
 // Profile Exports
 export { uploadProfilePhoto } from './profile';
+
+// Resource Exports
+export { 
+  getResources, 
+  createResourceFolder, 
+  renameResource, 
+  deleteResource,
+  uploadResourceFile 
+} from './resources';

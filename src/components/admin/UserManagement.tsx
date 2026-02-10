@@ -9,12 +9,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
+import { ConfirmationModal } from '../ui/confirmation-modal';
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string }>({
+    isOpen: false,
+    title: '',
+    message: '',
+  });
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -48,7 +54,11 @@ const UserManagement: React.FC = () => {
       setUsers(users.map((u) => (u.uid === userId ? { ...u, role: newRole } : u)));
     } catch (err) {
       console.error('Error updating role:', err);
-      alert('Failed to update user role');
+      setAlertState({
+        isOpen: true,
+        title: 'Error',
+        message: 'Failed to update user role',
+      });
     } finally {
       setUpdating(null);
     }
@@ -152,6 +162,13 @@ const UserManagement: React.FC = () => {
           <div className="p-8 text-center text-slate-500">No users found.</div>
         )}
       </div>
+
+      <ConfirmationModal
+        isOpen={alertState.isOpen}
+        onClose={() => setAlertState({ ...alertState, isOpen: false })}
+        title={alertState.title}
+        message={alertState.message}
+      />
     </div>
   );
 };

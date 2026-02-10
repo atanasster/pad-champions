@@ -1,26 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ResourceItem } from '../../types';
-import { 
-  getFirestore, 
-  collection, 
-  query, 
-  where, 
-  onSnapshot, 
-  addDoc, 
-  serverTimestamp, 
-  deleteDoc, 
-  doc, 
-  orderBy,
-  updateDoc
-} from 'firebase/firestore';
-import { 
-  getStorage, 
-  ref, 
-  uploadBytes, 
-  getDownloadURL, 
-  deleteObject 
-} from 'firebase/storage';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { 
   Folder, 
   FileText, 
@@ -35,11 +16,12 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { ConfirmationModal } from '../ui/confirmation-modal';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-const db = getFirestore();
-const storage = getStorage();
+const functions = getFunctions();
 
 interface ResourceManagerProps {
     className?: string;
@@ -58,49 +40,66 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
   // Viewer State
   const [selectedResource, setSelectedResource] = useState<ResourceItem | null>(null);
 
+  // Modals State
+  const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string }>({
+    isOpen: false,
+    title: '',
+    message: '',
+  });
+
+  const [deleteState, setDeleteState] = useState<{ isOpen: boolean; item: ResourceItem | null }>({
+    isOpen: false,
+    item: null,
+  });
+
+  const [createFolderState, setCreateFolderState] = useState<{ isOpen: boolean; name: string }>({
+    isOpen: false,
+    name: '',
+  });
+
+  const [renameState, setRenameState] = useState<{ isOpen: boolean; item: ResourceItem | null; newName: string }>({
+    isOpen: false,
+    item: null,
+    newName: '',
+  });
+
   // Permission Checks
   const canUpload = ['institutional-lead', 'admin', 'moderator'].includes(userRole || '');
   const canManage = ['admin', 'moderator'].includes(userRole || '');
   const isLead = userRole === 'institutional-lead';
 
-  useEffect(() => {
+  const fetchResources = useCallback(async () => {
     setLoading(true);
-    const q = query(
-      collection(db, 'resources'),
-      where('parentId', '==', currentFolderId),
-      orderBy('type', 'desc'),
-      orderBy('name', 'asc')
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as ResourceItem[];
-      setResources(items);
+    try {
+      const getResourcesFn = httpsCallable<{ parentId: string | null }, { resources: ResourceItem[] }>(functions, 'getResources');
+      const result = await getResourcesFn({ parentId: currentFolderId });
+      setResources(result.data.resources);
+    } catch (error) {
+      console.error("Error fetching resources:", error);
+    } finally {
       setLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
   }, [currentFolderId]);
 
+  useEffect(() => {
+    fetchResources();
+  }, [fetchResources]);
+
   const handleCreateFolder = async () => {
-    const name = prompt("Enter folder name:");
-    if (!name) return;
+    if (!createFolderState.name) return;
 
     try {
-      await addDoc(collection(db, 'resources'), {
-        name,
-        type: 'folder',
-        parentId: currentFolderId,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        accessLevel: 'public',
-        createdBy: currentUser?.uid
-      });
+      const createFolderFn = httpsCallable<{ name: string; parentId: string | null }, ResourceItem>(functions, 'createResourceFolder');
+      await createFolderFn({ name: createFolderState.name, parentId: currentFolderId });
+      fetchResources(); // Refresh list
+      setCreateFolderState({ isOpen: false, name: '' });
     } catch (error) {
       console.error("Error creating folder:", error);
-      alert("Failed to create folder");
+      setAlertState({
+        isOpen: true,
+        title: "Error",
+        message: "Failed to create folder"
+      });
     }
   };
 
@@ -108,77 +107,96 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
     
-    // Access Level Prompt (Simple for now)
-    const accessLevel = 'learner'; 
+    // Size check (e.g. 10MB limit for Base64)
+    if (file.size > 10 * 1024 * 1024) {
+      setAlertState({
+        isOpen: true,
+        title: "Error",
+        message: "File is too large. Maximum size is 10MB."
+      });
+      return;
+    }
 
     try {
       setIsUploading(true);
       
-      // 1. Upload to Storage
-      // Path: resources/{userId}/{timestamp}_{filename} to avoid collisions
-      const storagePath = `resources/${currentUser?.uid}/${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, storagePath);
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(',')[1];
+        
+        try {
+          const uploadFileFn = httpsCallable(functions, 'uploadResourceFile');
+          await uploadFileFn({
+            fileData: base64,
+            fileName: file.name,
+            mimeType: file.type,
+            parentId: currentFolderId,
+            accessLevel: 'learner'
+          });
+          
+          fetchResources();
+        } catch (error) {
+           console.error("Error uploading:", error);
+           setAlertState({
+             isOpen: true,
+             title: "Error",
+             message: "Failed to upload file"
+           });
+        } finally {
+           setIsUploading(false);
+           if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      };
       
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      reader.onerror = () => {
+        console.error("Error reading file");
+        setIsUploading(false);
+      };
 
-      // 2. Save Metadata to Firestore
-      await addDoc(collection(db, 'resources'), {
-        name: file.name,
-        type: 'file',
-        mimeType: file.type,
-        url,
-        storagePath,
-        parentId: currentFolderId,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        accessLevel, 
-        size: file.size,
-        createdBy: currentUser?.uid,
-        uploadedBy: currentUser?.uid
-      });
+      reader.readAsDataURL(file);
 
     } catch (error) {
-      console.error("Error uploading:", error);
-      alert("Failed to upload file");
-    } finally {
+      console.error("Error prep:", error);
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleDelete = async (item: ResourceItem) => {
-    if (!confirm(`Are you sure you want to delete "${item.name}"?`)) return;
+  const confirmDelete = async () => {
+    if (!deleteState.item) return;
     
     try {
-      // 1. Delete from Firestore
-      await deleteDoc(doc(db, 'resources', item.id));
-
-      // 2. Delete from Storage if it's a file
-      if (item.type === 'file' && item.storagePath) {
-        const fileRef = ref(storage, item.storagePath);
-        await deleteObject(fileRef).catch(err => {
-            console.warn("Failed to delete from storage (might be missing):", err);
-        });
-      }
+      const deleteResourceFn = httpsCallable(functions, 'deleteResource');
+      await deleteResourceFn({ resourceId: deleteState.item.id });
+      fetchResources();
+      setDeleteState({ isOpen: false, item: null });
     } catch (error) {
       console.error("Error deleting:", error);
-      alert("Failed to delete item");
+      setAlertState({
+        isOpen: true,
+        title: "Error",
+        message: "Failed to delete item"
+      });
     }
   };
 
-  const handleRename = async (item: ResourceItem) => {
-    const newName = prompt("Enter new name:", item.name);
-    if (!newName || newName === item.name) return;
+  const confirmRename = async () => {
+    if (!renameState.item || !renameState.newName || renameState.newName === renameState.item.name) {
+        setRenameState({ ...renameState, isOpen: false });
+        return;
+    }
 
     try {
-        await updateDoc(doc(db, 'resources', item.id), {
-            name: newName,
-            updatedAt: serverTimestamp()
-        });
+        const renameResourceFn = httpsCallable(functions, 'renameResource');
+        await renameResourceFn({ resourceId: renameState.item.id, newName: renameState.newName });
+        fetchResources();
+        setRenameState({ isOpen: false, item: null, newName: '' });
     } catch (error) {
         console.error("Error renaming:", error);
-        alert("Failed to rename");
+        setAlertState({
+            isOpen: true,
+            title: "Error",
+            message: "Failed to rename"
+        });
     }
   };
 
@@ -224,7 +242,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
                 className="hidden" 
                 onChange={handleFileSelect}
             />
-            <Button onClick={handleCreateFolder} variant="outline" size="sm" className="flex items-center">
+            <Button onClick={() => setCreateFolderState({ isOpen: true, name: '' })} variant="outline" size="sm" className="flex items-center">
               <Folder className="w-4 h-4 mr-2" />
               New Folder
             </Button>
@@ -312,7 +330,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
                            <Button
                               variant="ghost"
                               size="icon"
-                              onClick={(e) => { e.stopPropagation(); handleRename(item); }}
+                              onClick={(e) => { e.stopPropagation(); setRenameState({ isOpen: true, item, newName: item.name }); }}
                               className="h-8 w-8 text-gray-500 hover:text-blue-600 hover:bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity"
                            >
                               <Edit2 className="w-4 h-4" />
@@ -320,7 +338,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
                            <Button 
                              variant="ghost" 
                              size="icon" 
-                             onClick={(e) => { e.stopPropagation(); handleDelete(item); }}
+                             onClick={(e) => { e.stopPropagation(); setDeleteState({ isOpen: true, item }); }}
                              className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
                            >
                              <Trash2 className="w-4 h-4" />
@@ -377,6 +395,62 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
             </div>
         )}
       </div>
+
+      {/* Resource Modals */}
+      <ConfirmationModal
+        isOpen={alertState.isOpen}
+        onClose={() => setAlertState({ ...alertState, isOpen: false })}
+        title={alertState.title}
+        message={alertState.message}
+      />
+
+      <ConfirmationModal
+        isOpen={deleteState.isOpen}
+        onClose={() => setDeleteState({ isOpen: false, item: null })}
+        onConfirm={confirmDelete}
+        title="Delete Resource"
+        message={`Are you sure you want to delete "${deleteState.item?.name}"?`}
+        variant="destructive"
+        confirmText="Delete"
+      />
+
+      <ConfirmationModal
+        isOpen={createFolderState.isOpen}
+        onClose={() => setCreateFolderState({ isOpen: false, name: '' })}
+        onConfirm={handleCreateFolder}
+        title="New Folder"
+        message={
+          <div className="flex flex-col gap-4">
+            <p>Enter a name for the new folder:</p>
+            <Input
+              value={createFolderState.name}
+              onChange={(e) => setCreateFolderState({ ...createFolderState, name: e.target.value })}
+              placeholder="Folder Name"
+              autoFocus
+            />
+          </div>
+        }
+        confirmText="Create"
+      />
+
+      <ConfirmationModal
+        isOpen={renameState.isOpen}
+        onClose={() => setRenameState({ isOpen: false, item: null, newName: '' })}
+        onConfirm={confirmRename}
+        title="Rename Resource"
+        message={
+          <div className="flex flex-col gap-4">
+            <p>Enter a new name for the resource:</p>
+            <Input
+              value={renameState.newName}
+              onChange={(e) => setRenameState({ ...renameState, newName: e.target.value })}
+              placeholder="Resource Name"
+              autoFocus
+            />
+          </div>
+        }
+        confirmText="Rename"
+      />
     </div>
   );
 };
