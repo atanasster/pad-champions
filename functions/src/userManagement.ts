@@ -98,3 +98,50 @@ export const setUserRole = onCall(defaultCallOpts, async (request) => {
     throw new HttpsError('internal', 'Unable to set user role');
   }
 });
+
+export const setAdvisoryBoardStatus = onCall(defaultCallOpts, async (request) => {
+  assertAdmin(request);
+
+  const { targetUid, status } = request.data;
+
+  if (!targetUid || typeof status !== 'boolean') {
+    throw new HttpsError('invalid-argument', 'Invalid targetUid or status');
+  }
+
+  try {
+    await db.collection('users').doc(targetUid).update({ isAdvisoryBoardMember: status });
+    logger.info(`Advisory Board status updated for ${targetUid} to ${status} by ${request.auth?.uid}`);
+    return { success: true };
+  } catch (error) {
+    logger.error(`Error setting advisory board status for ${targetUid}`, error);
+    throw new HttpsError('internal', 'Unable to set advisory board status');
+  }
+});
+
+export const getAdvisoryBoardMembers = onCall(defaultCallOpts, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  try {
+    const snapshot = await db.collection('users').where('isAdvisoryBoardMember', '==', true).get();
+    
+    const members = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        uid: doc.id,
+        displayName: data.displayName,
+        email: data.email,
+        photoURL: data.photoURL,
+        bio: data.bio,
+        institution: data.institution,
+        title: data.title
+      };
+    });
+
+    return { members };
+  } catch (error) {
+    logger.error('Error fetching advisory board members', error);
+    throw new HttpsError('internal', 'Unable to fetch advisory board members');
+  }
+});

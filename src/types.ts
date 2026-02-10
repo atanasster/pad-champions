@@ -32,6 +32,7 @@ export interface UserData {
   photoURL?: string;
   role: UserRole;
   createdAt: string;
+  isAdvisoryBoardMember?: boolean;
   // Extended Profile Fields
   institution?: string;
   title?: string; // for leads

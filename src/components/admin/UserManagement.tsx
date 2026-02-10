@@ -9,12 +9,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
+import { Input } from '../ui/input';
+import { Checkbox } from '../ui/checkbox';
+import { Search } from 'lucide-react';
 import { ConfirmationModal } from '../ui/confirmation-modal';
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<UserData[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [updatingAdvisory, setUpdatingAdvisory] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string }>({
     isOpen: false,
@@ -64,18 +69,63 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  const handleAdvisoryToggle = async (userId: string, currentStatus: boolean) => {
+    setUpdatingAdvisory(userId);
+    try {
+      const setAdvisoryBoardStatusFunction = httpsCallable<
+        { targetUid: string; status: boolean },
+        { success: boolean }
+      >(functions, 'setAdvisoryBoardStatus');
+      await setAdvisoryBoardStatusFunction({ targetUid: userId, status: !currentStatus });
+
+      // Optimistic update
+      setUsers(
+        users.map((u) => (u.uid === userId ? { ...u, isAdvisoryBoardMember: !currentStatus } : u))
+      );
+    } catch (err) {
+      console.error('Error updating advisory board status:', err);
+      setAlertState({
+        isOpen: true,
+        title: 'Error',
+        message: 'Failed to update advisory board status',
+      });
+    } finally {
+      setUpdatingAdvisory(null);
+    }
+  };
+
+
+  const filteredUsers = users.filter((user) => {
+    const term = searchTerm.toLowerCase();
+    const name = user.displayName?.toLowerCase() || '';
+    const email = user.email?.toLowerCase() || '';
+    return name.includes(term) || email.includes(term);
+  });
+
   if (loading) return <div className="p-8 text-center">Loading users...</div>;
 
   return (
     <div className="bg-white shadow-xl rounded-lg overflow-hidden border border-slate-200">
       <div className="flex justify-between items-center p-6 border-b border-slate-200">
         <h2 className="text-xl font-semibold text-slate-800">User Management</h2>
-        <button
-          onClick={fetchUsers}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
-        >
-          Refresh Users
-        </button>
+        <div className="flex gap-4">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+            <Input
+              type="text"
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 w-[250px]"
+            />
+          </div>
+          <button
+            onClick={fetchUsers}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
+          >
+            Refresh Users
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -91,12 +141,13 @@ const UserManagement: React.FC = () => {
               <th className="p-4 font-semibold">User</th>
               <th className="p-4 font-semibold">Email</th>
               <th className="p-4 font-semibold">Role</th>
+              <th className="p-4 font-semibold">Advisory Board</th>
               <th className="p-4 font-semibold">Joined</th>
               <th className="p-4 font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <tr key={user.uid} className="hover:bg-slate-50 transition duration-150">
                 <td className="p-4">
                   <div className="flex items-center gap-3">
@@ -128,6 +179,20 @@ const UserManagement: React.FC = () => {
                     {user.role}
                   </span>
                 </td>
+                <td className="p-4 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <Checkbox
+                      checked={user.isAdvisoryBoardMember || false}
+                      onCheckedChange={() =>
+                        handleAdvisoryToggle(user.uid, user.isAdvisoryBoardMember || false)
+                      }
+                      disabled={updatingAdvisory === user.uid}
+                    />
+                    {updatingAdvisory === user.uid && (
+                      <span className="text-xs text-indigo-500 animate-pulse">...</span>
+                    )}
+                  </div>
+                </td>
                 <td className="p-4 text-slate-500 text-sm">
                   {new Date(user.createdAt).toLocaleDateString()}
                 </td>
@@ -158,8 +223,10 @@ const UserManagement: React.FC = () => {
             ))}
           </tbody>
         </table>
-        {users.length === 0 && !loading && (
-          <div className="p-8 text-center text-slate-500">No users found.</div>
+        {filteredUsers.length === 0 && !loading && (
+          <div className="p-8 text-center text-slate-500">
+            {searchTerm ? 'No users found matching your search.' : 'No users found.'}
+          </div>
         )}
       </div>
 
