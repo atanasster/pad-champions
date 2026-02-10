@@ -2,16 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { TopicList } from './TopicList';
 import { TopicDetail } from './TopicDetail';
 import { CreateTopicForm } from './CreateTopicForm';
-import { ForumPost } from '../../types';
-import { getFirestore, collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
-import { Plus } from 'lucide-react';
+import { ForumPost, ForumType } from '../../types';
+import { getFirestore, collection, query, orderBy, onSnapshot, limit, where } from 'firebase/firestore';
+import { Plus, Users, GraduationCap, Building2 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { cn } from '../../lib/utils';
 
 const db = getFirestore();
 
 type ViewState = 'list' | 'detail' | 'create';
 
 export const Forums: React.FC = () => {
+  const { userRole } = useAuth();
   const [view, setView] = useState<ViewState>('list');
+  const [activeBoard, setActiveBoard] = useState<ForumType>('general');
   const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null);
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +24,13 @@ export const Forums: React.FC = () => {
     // Determine sort order - sticking to "Latest Activity" essentially (newest posts first,
     // ideally we'd sort by lastCommentAt but we might need a composite index for that)
     // For now, sorting by createdAt desc.
-    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(50));
+    // Filter by activeBoard
+    const q = query(
+      collection(db, 'posts'),
+      where('forumType', '==', activeBoard),
+      orderBy('createdAt', 'desc'),
+      limit(50),
+    );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedPosts = snapshot.docs.map((doc) => ({
@@ -32,7 +42,7 @@ export const Forums: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [activeBoard]); // Re-run when board changes
 
   const handleCreateSuccess = () => {
     setView('list');
@@ -44,7 +54,14 @@ export const Forums: React.FC = () => {
   };
 
   if (view === 'create') {
-    return <CreateTopicForm onCancel={() => setView('list')} onSuccess={handleCreateSuccess} />;
+    return (
+      <CreateTopicForm
+        onCancel={() => setView('list')}
+        onSuccess={handleCreateSuccess}
+        initialForumType={activeBoard}
+        userRole={userRole || 'volunteer'}
+      />
+    );
   }
 
   if (view === 'detail' && selectedPost) {
@@ -73,6 +90,52 @@ export const Forums: React.FC = () => {
           <Plus className="w-5 h-5 mr-2" />
           New Topic
         </button>
+      </div>
+
+      {/* Board Tabs */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6 w-fit">
+        <button
+          onClick={() => setActiveBoard('general')}
+          className={cn(
+            'flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors',
+            activeBoard === 'general'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-900',
+          )}
+        >
+          <Users className="w-4 h-4 mr-2" />
+          General
+        </button>
+
+        {['learner', 'institutional-lead', 'admin', 'moderator'].includes(userRole || '') && (
+          <button
+            onClick={() => setActiveBoard('learner')}
+            className={cn(
+              'flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors',
+              activeBoard === 'learner'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-900',
+            )}
+          >
+            <GraduationCap className="w-4 h-4 mr-2" />
+            Learners
+          </button>
+        )}
+
+        {['institutional-lead', 'admin', 'moderator'].includes(userRole || '') && (
+          <button
+            onClick={() => setActiveBoard('institutional-lead')}
+            className={cn(
+              'flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors',
+              activeBoard === 'institutional-lead'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-900',
+            )}
+          >
+            <Building2 className="w-4 h-4 mr-2" />
+            Institutional Leads
+          </button>
+        )}
       </div>
 
       <TopicList posts={posts} isLoading={loading} onSelectPost={handlePostRead} />

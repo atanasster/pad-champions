@@ -23,7 +23,7 @@ export interface NavItem {
   path: string;
 }
 
-export type UserRole = 'admin' | 'moderator' | 'volunteer';
+export type UserRole = 'admin' | 'moderator' | 'volunteer' | 'learner' | 'institutional-lead';
 
 export interface UserData {
   uid: string;
@@ -32,7 +32,22 @@ export interface UserData {
   photoURL?: string;
   role: UserRole;
   createdAt: string;
+  // Extended Profile Fields
+  institution?: string;
+  title?: string; // for leads
+  bio?: string;
+  yearInSchool?: string; // for learners
+  workAddress?: string; // for leads
+  cellPhone?: string; // for leads
+  socialLinks?: {
+    linkedin?: string;
+    twitter?: string;
+    facebook?: string;
+    instagram?: string;
+  };
 }
+
+export type ForumType = 'general' | 'learner' | 'institutional-lead';
 
 export interface ForumPost {
   id: string;
@@ -56,6 +71,23 @@ export interface ForumComment {
   createdAt: Timestamp;
   parentId: string | null;
   children?: ForumComment[]; // For UI threading
+}
+
+export interface ResourceItem {
+  id: string;
+  name: string;
+  type: 'folder' | 'file';
+  mimeType?: string; // for files
+  url?: string; // for files
+  path: string; // virtual path e.g. /training-docs/module-1
+  parentId: string | null; // for hierarchy
+  size?: number;
+  uploadedBy?: string;
+  createdBy?: string; // for folders
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  accessLevel: 'public' | 'learner' | 'lead' | 'admin'; 
+  storagePath?: string; // Path in Firebase Storage
 }
 
 export interface ForumNotification {

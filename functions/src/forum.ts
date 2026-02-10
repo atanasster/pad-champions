@@ -15,6 +15,7 @@ const db = admin.firestore();
 const CreatePostSchema = z.object({
   title: z.string().min(5, 'Title too short').max(200, 'Title too long'),
   content: z.string().min(10, 'Content too short'),
+  forumType: z.enum(['general', 'learner', 'institutional-lead']).optional().default('general'),
 });
 
 const CreateReplySchema = z.object({
@@ -42,14 +43,28 @@ export const createPost = onCall({ cors: true }, async (request) => {
     throw new HttpsError('invalid-argument', validation.error.message);
   }
 
-  const { title, content } = validation.data;
+  const { title, content, forumType } = validation.data;
   const authorId = request.auth.uid;
   const authorName = request.auth.token.name || request.auth.token.email || 'Anonymous';
+  const role = request.auth.token.role || 'visitor';
+
+  // Permission Check for Forum Type
+  if (forumType === 'institutional-lead') {
+    if (!['admin', 'moderator', 'institutional-lead'].includes(role)) {
+      throw new HttpsError('permission-denied', 'Only Institutional Leads can post here.');
+    }
+  } else if (forumType === 'learner') {
+    if (!['admin', 'moderator', 'institutional-lead', 'learner'].includes(role)) {
+      throw new HttpsError('permission-denied', 'Only Learners and Leads can post here.');
+    }
+  }
+  // 'general' is open to all authenticated users (including volunteers/visitors)
 
   try {
     const postRef = await db.collection('posts').add({
       title,
       content,
+      forumType, // Save the forum type
       authorId,
       authorName,
       createdAt: FieldValue.serverTimestamp(),

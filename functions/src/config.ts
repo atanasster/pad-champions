@@ -10,5 +10,5 @@ export const corsOptions = [
 
 // Reusable options object for onCall functions
 export const defaultCallOpts = {
-  cors: corsOptions,
+  cors: true,
 };

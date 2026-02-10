@@ -80,7 +80,7 @@ export const setUserRole = onCall(defaultCallOpts, async (request) => {
 
   const { targetUid, newRole } = request.data;
 
-  if (!targetUid || !['admin', 'moderator', 'volunteer'].includes(newRole)) {
+  if (!targetUid || !['admin', 'moderator', 'volunteer', 'learner', 'institutional-lead'].includes(newRole)) {
     throw new HttpsError('invalid-argument', 'Invalid targetUid or newRole');
   }
 

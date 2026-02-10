@@ -6,6 +6,7 @@ import {
   Route,
   Outlet,
   ScrollRestoration,
+  Navigate,
 } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -20,7 +21,10 @@ import AIScreening from './pages/AIScreening';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import UserManagement from './components/admin/UserManagement';
+import EventsManager from './components/admin/EventsManager';
 import Profile from './pages/Profile';
+import { ResourcePortal } from './pages/ResourcePortal';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import { AuthProvider } from './contexts/AuthProvider';
@@ -55,11 +59,15 @@ const router = createBrowserRouter(
       <Route element={<ProtectedRoute />}>
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="resources" element={<ResourcePortal />} />
       </Route>
 
-      {/* Admin Routes */}
       <Route element={<AdminRoute />}>
-        <Route path="admin" element={<AdminDashboard />} />
+        <Route path="admin" element={<AdminDashboard />}>
+          <Route index element={<Navigate to="users" replace />} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="events" element={<EventsManager />} />
+        </Route>
       </Route>
     </Route>,
   ),

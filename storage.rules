@@ -1,0 +1,39 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper check
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Role helpers
+    function isAdmin() {
+      return request.auth.token.role == 'admin';
+    }
+    function isModerator() {
+      return request.auth.token.role == 'moderator';
+    }
+    function isInstitutionalLead() {
+      return request.auth.token.role == 'institutional-lead';
+    }
+
+    match /resources/{allPaths=**} {
+      // READ: Allow all authenticated users
+      allow read: if isAuthenticated();
+
+      // WRITE: Allow Lead, Admin, Mod
+      allow write: if isAuthenticated() && (
+        isInstitutionalLead() || isAdmin() || isModerator()
+      );
+
+      // DELETE: 
+      // Admin/Mod can delete anything
+      // Lead can only delete if they are the uploader (metadata check)
+      allow delete: if isAuthenticated() && (
+        isAdmin() || isModerator() ||
+        (isInstitutionalLead() && resource.metadata.uploadedBy == request.auth.uid)
+      );
+    }
+  }
+}

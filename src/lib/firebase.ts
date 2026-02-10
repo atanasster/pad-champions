@@ -12,6 +12,8 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+import { getStorage } from 'firebase/storage';
+
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);
 
@@ -21,6 +23,9 @@ export const googleProvider = new GoogleAuthProvider();
 
 // Initialize Functions and connect to emulator in dev mode
 export const functions = getFunctions(app);
+
+// Initialize Storage
+export const storage = getStorage(app);
 
 if (import.meta.env.DEV) {
   console.log('🔌 Connecting to Functions Emulator');

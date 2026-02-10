@@ -72,3 +72,6 @@ export { getEvents, manageEvent, seedEvents } from './events';
 // Forum Exports
 export { createPost, createReply, deleteForumItem } from './forum';
 export { onReplyCreated } from './forumTriggers';
+
+// Profile Exports
+export { uploadProfilePhoto } from './profile';

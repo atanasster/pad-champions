@@ -10,6 +10,7 @@ import { cn } from '../../lib/utils'; // Assuming shadcn utils
 const topicSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters').max(200, 'Title matches limit'),
   content: z.string().min(10, 'Content must be at least 10 characters'),
+  forumType: z.enum(['general', 'learner', 'institutional-lead']),
 });
 
 type TopicFormValues = z.infer<typeof topicSchema>;
@@ -17,18 +18,31 @@ type TopicFormValues = z.infer<typeof topicSchema>;
 interface CreateTopicFormProps {
   onCancel: () => void;
   onSuccess: () => void;
+  initialForumType?: 'general' | 'learner' | 'institutional-lead';
+  userRole?: string;
 }
 
-export const CreateTopicForm: React.FC<CreateTopicFormProps> = ({ onCancel, onSuccess }) => {
+export const CreateTopicForm: React.FC<CreateTopicFormProps> = ({
+  onCancel,
+  onSuccess,
+  initialForumType = 'general',
+  userRole = 'volunteer',
+}) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // const { user } = useAuth(); // If needed for local checks, but server validates
   const functions = getFunctions();
   const createPostFn = httpsCallable(functions, 'createPost');
 
   const form = useForm<TopicFormValues>({
     resolver: zodResolver(topicSchema),
+    defaultValues: {
+      forumType: initialForumType,
+    },
   });
+
+  // Determine available options based on role
+  const canPostToLearner = ['learner', 'institutional-lead', 'admin', 'moderator'].includes(userRole);
+  const canPostToLead = ['institutional-lead', 'admin', 'moderator'].includes(userRole);
 
   const onSubmit = async (data: TopicFormValues) => {
     setIsSubmitting(true);
@@ -53,6 +67,23 @@ export const CreateTopicForm: React.FC<CreateTopicFormProps> = ({ onCancel, onSu
       {error && <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm mb-4">{error}</div>}
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {/* Forum Type Selector */}
+        {(canPostToLearner || canPostToLead) && (
+          <div>
+            <label htmlFor="forumType" className="block text-sm font-medium text-gray-700 mb-1">
+              Post to Board
+            </label>
+            <select
+              {...form.register('forumType')}
+              id="forumType"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c2002f] focus:border-transparent"
+            >
+              <option value="general">General Community</option>
+              {canPostToLearner && <option value="learner">Learner Discussion</option>}
+              {canPostToLead && <option value="institutional-lead">Institutional Leads</option>}
+            </select>
+          </div>
+        )}
         <div>
           <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
             Title

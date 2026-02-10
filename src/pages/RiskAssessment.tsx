@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { QuizQuestion } from '../types';
 import { Link } from 'react-router-dom';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Users } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
@@ -84,6 +84,7 @@ const RiskAssessment: React.FC = () => {
             ) : (
               <div className="text-center animate-in fade-in zoom-in-95 duration-300">
                 {isHighRisk ? (
+                  <>
                   <Alert
                     variant="destructive"
                     className="bg-red-50 border-red-200 mb-8 p-8 text-center"
@@ -105,6 +106,34 @@ const RiskAssessment: React.FC = () => {
                       </Button>
                     </div>
                   </Alert>
+
+                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-8 mb-8 text-center shadow-sm">
+                    <div className="flex flex-col items-center">
+                      <div className="bg-blue-100 p-4 rounded-full mb-4">
+                        <Users className="h-10 w-10 text-blue-600" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-brand-dark mb-3 font-serif">
+                        You Are Not Alone
+                      </h3>
+                      <p className="text-slate-700 mb-6 max-w-lg mx-auto leading-relaxed">
+                        Join our supportive community to ask questions, share experiences, and get advice from others who understand what you're going through.
+                      </p>
+                      <Button
+                        asChild
+                        variant="outline"
+                        className="w-full sm:w-auto border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white text-lg font-bold h-12 px-8"
+                      >
+                        <a 
+                          href="https://www.facebook.com/groups/339414847401943" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                        >
+                          Join Our Facebook Group
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                  </>
                 ) : (
                   <Alert className="bg-green-50 border-green-200 mb-8 p-8 text-center">
                     <div className="flex flex-col items-center">
