@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { ResourceItem } from '../../types';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { 
   Folder, 
   FileText, 
@@ -22,6 +24,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const functions = getFunctions();
+const db = getFirestore();
 
 interface ResourceManagerProps {
     className?: string;
@@ -30,14 +33,24 @@ interface ResourceManagerProps {
 
 export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, title = "Resources" }) => {
   const { userRole, currentUser } = useAuth();
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  const currentFolderId = searchParams.get('folderId');
+  const selectedResourceId = searchParams.get('resourceId');
+
   const [folderPath, setFolderPath] = useState<{id: string, name: string}[]>([]);
   const [resources, setResources] = useState<ResourceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Viewer State
+  // Drag and Drop State
+  const [isDragging, setIsDragging] = useState(false);
+  const [droppedFile, setDroppedFile] = useState<File | null>(null);
+  const dragCounter = useRef(0);
+  
+  // Viewer State - filtered from resources or fetched individually if needed
+  // For simplicity, we'll try to find it in the current list first
   const [selectedResource, setSelectedResource] = useState<ResourceItem | null>(null);
 
   // Modals State
@@ -68,6 +81,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
   const canManage = ['admin', 'moderator'].includes(userRole || '');
   const isLead = userRole === 'institutional-lead';
 
+  // 1. Fetch Resources for current folder
   const fetchResources = useCallback(async () => {
     setLoading(true);
     try {
@@ -84,6 +98,54 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
   useEffect(() => {
     fetchResources();
   }, [fetchResources]);
+
+  // 2. Sync Selected Resource
+  useEffect(() => {
+    if (selectedResourceId && resources.length > 0) {
+      const found = resources.find(r => r.id === selectedResourceId);
+      if (found) setSelectedResource(found);
+    } else if (!selectedResourceId) {
+      setSelectedResource(null);
+    }
+  }, [selectedResourceId, resources]);
+
+  // 3. Reconstruct Path if missing (Deep Linking support)
+  useEffect(() => {
+    const reconstructPath = async () => {
+        if (!currentFolderId) {
+            setFolderPath([]);
+            return;
+        }
+
+        // If we already have a path that ends in currentFolderId, we are good
+        if (folderPath.length > 0 && folderPath[folderPath.length - 1].id === currentFolderId) {
+            return;
+        }
+
+        try {
+            // Simplified reconstruction: Just fetch current folder for now
+            // Ideally we'd recursively fetch parents, but let's start with the current one
+            const docRef = doc(db, 'resources', currentFolderId);
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                // If we really want full breadcrumbs, we'd need to fetch the parent chain.
+                // For now, let's just show the current folder. 
+                // A more robust solution would be to store 'path' array in the document itself.
+                
+                // Hack: If we don't have the parent in our path, we reset to just this folder.
+                // This means "Home" takes you back to root, which is safe.
+                setFolderPath([{ id: docSnap.id, name: data.name }]);
+            }
+        } catch (error) {
+            console.error("Error reconstructing path:", error);
+        }
+    };
+    
+    reconstructPath();
+  }, [currentFolderId]); // Only run when folder changes
+
 
   const handleCreateFolder = async () => {
     if (!createFolderState.name) return;
@@ -103,10 +165,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
     }
   };
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
-    
+  const uploadFile = async (file: File) => {
     // Size check (e.g. 10MB limit for Base64)
     if (file.size > 10 * 1024 * 1024) {
       setAlertState({
@@ -161,6 +220,63 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
     }
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    await uploadFile(file);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current += 1;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current -= 1;
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCounter.current = 0;
+
+    if (!canUpload) {
+        setAlertState({
+            isOpen: true,
+            title: "Permission Denied",
+            message: "You do not have permission to upload files."
+        });
+        return;
+    }
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      setDroppedFile(file);
+    }
+  };
+
+  const handleConfirmDropUpload = async () => {
+    if (droppedFile) {
+      await uploadFile(droppedFile);
+      setDroppedFile(null);
+    }
+  };
+
   const confirmDelete = async () => {
     if (!deleteState.item) return;
     
@@ -169,6 +285,14 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
       await deleteResourceFn({ resourceId: deleteState.item.id });
       fetchResources();
       setDeleteState({ isOpen: false, item: null });
+      // If we deleted the currently viewed resource
+      if (selectedResourceId === deleteState.item.id) {
+          setSearchParams(curr => {
+              const next = new URLSearchParams(curr);
+              next.delete('resourceId');
+              return next;
+          });
+      }
     } catch (error) {
       console.error("Error deleting:", error);
       setAlertState({
@@ -201,21 +325,37 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
   };
 
   const enterFolder = (folder: ResourceItem) => {
+    // Optimistic Update
     setFolderPath([...folderPath, { id: folder.id, name: folder.name }]);
-    setCurrentFolderId(folder.id);
-    setSelectedResource(null);
+    
+    setSearchParams(curr => {
+        const next = new URLSearchParams(curr);
+        next.set('folderId', folder.id);
+        next.delete('resourceId'); // Close viewer
+        return next;
+    });
   };
 
   const navigateUp = (index: number) => {
     if (index === -1) {
       setFolderPath([]);
-      setCurrentFolderId(null);
+      setSearchParams(curr => {
+        const next = new URLSearchParams(curr);
+        next.delete('folderId');
+        next.delete('resourceId');
+        return next;
+      });
     } else {
       const newPath = folderPath.slice(0, index + 1);
       setFolderPath(newPath);
-      setCurrentFolderId(newPath[newPath.length - 1].id);
+      const targetFolderId = newPath[newPath.length - 1].id;
+      setSearchParams(curr => {
+        const next = new URLSearchParams(curr);
+        next.set('folderId', targetFolderId);
+        next.delete('resourceId');
+        return next;
+      });
     }
-    setSelectedResource(null);
   };
 
   // Helper to check delete permission locally (rules enforce it too)
@@ -227,7 +367,19 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
   };
 
   return (
-    <div className={cn("w-full", className)}>
+    <div 
+        className={cn("w-full relative", className)}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+    >
+        {isDragging && canUpload && (
+            <div className="absolute inset-0 z-50 bg-blue-50/90 border-4 border-dashed border-blue-400 rounded-lg flex flex-col items-center justify-center pointer-events-none transition-all">
+                <Upload className="w-16 h-16 text-blue-500 mb-4 animate-bounce" />
+                <p className="text-xl font-bold text-blue-600">Drop files here to upload</p>
+            </div>
+        )}
       <div className="flex justify-between items-center mb-6">
         <div>
            <h2 className="text-2xl font-bold text-gray-900 font-serif mb-1">{title}</h2>
@@ -302,7 +454,17 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
                         "flex items-center justify-between p-3 hover:bg-slate-50 group transition-colors cursor-pointer",
                         selectedResource?.id === item.id && "bg-slate-100"
                      )}
-                     onClick={() => item.type === 'folder' ? enterFolder(item) : setSelectedResource(item)}
+                     onClick={() => {
+                       if (item.type === 'folder') {
+                           enterFolder(item);
+                       } else {
+                           setSearchParams(curr => {
+                               const next = new URLSearchParams(curr);
+                               next.set('resourceId', item.id!);
+                               return next;
+                           });
+                       }
+                     }}
                    >
                      <div className="flex items-center flex-1 min-w-0">
                        {item.type === 'folder' ? (
@@ -364,7 +526,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
                                 Download
                              </a>
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => setSelectedResource(null)}>
+                        <Button variant="ghost" size="sm" onClick={() => setSearchParams(curr => { const next = new URLSearchParams(curr); next.delete('resourceId'); return next; })}>
                             <X className="w-4 h-4" />
                         </Button>
                     </div>
@@ -450,6 +612,15 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
           </div>
         }
         confirmText="Rename"
+      />
+
+      <ConfirmationModal
+        isOpen={!!droppedFile}
+        onClose={() => setDroppedFile(null)}
+        onConfirm={handleConfirmDropUpload}
+        title="Upload File"
+        message={`Are you sure you want to upload "${droppedFile?.name}"?`}
+        confirmText="Upload"
       />
     </div>
   );

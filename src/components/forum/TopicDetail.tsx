@@ -5,7 +5,7 @@ import { ArrowLeft, Clock, User, MessageSquare, Trash2, AlertCircle } from 'luci
 import { ConfirmationModal } from '../ui/confirmation-modal';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { formatDistanceToNow } from 'date-fns';
-import { getFirestore, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, onSnapshot, doc } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { cn } from '../../lib/utils';
@@ -13,7 +13,7 @@ import { cn } from '../../lib/utils';
 const db = getFirestore();
 
 interface TopicDetailProps {
-  post: ForumPost;
+  postId: string;
   onBack: () => void;
 }
 
@@ -138,9 +138,11 @@ const CommentItem: React.FC<{
   );
 };
 
-export const TopicDetail: React.FC<TopicDetailProps> = ({ post, onBack }) => {
+export const TopicDetail: React.FC<TopicDetailProps> = ({ postId, onBack }) => {
+  const [post, setPost] = useState<ForumPost | null>(null);
   const [comments, setComments] = useState<ForumComment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [postLoading, setPostLoading] = useState(true);
   const { currentUser: user, userRole } = useAuth();
   const functions = getFunctions();
   const deleteForumItemFn = httpsCallable(functions, 'deleteForumItem');
@@ -148,9 +150,26 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ post, onBack }) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch Post
+  useEffect(() => {
+      const unsub = onSnapshot(doc(db, 'posts', postId), (docSnap) => {
+          if (docSnap.exists()) {
+              setPost({ id: docSnap.id, ...docSnap.data() } as ForumPost);
+          } else {
+              setError("Topic not found");
+          }
+          setPostLoading(false);
+      }, (err) => {
+          console.error("Error fetching post:", err);
+          setError("Failed to load topic");
+          setPostLoading(false);
+      });
+      return () => unsub();
+  }, [postId]);
+
   useEffect(() => {
     // Subscribe to comments subcollection
-    const q = query(collection(db, 'posts', post.id, 'comments'), orderBy('createdAt', 'asc'));
+    const q = query(collection(db, 'posts', postId, 'comments'), orderBy('createdAt', 'asc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const allComments: ForumComment[] = snapshot.docs.map((doc) => ({
@@ -182,7 +201,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ post, onBack }) => {
     });
 
     return () => unsubscribe();
-  }, [post.id]);
+  }, [postId]);
 
   const handleDeleteClick = () => {
     setDeleteModalOpen(true);
@@ -192,6 +211,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ post, onBack }) => {
     setIsDeletingPost(true);
     setError(null);
     try {
+      if (!post) return;
       await deleteForumItemFn({ id: post.id, type: 'post' });
       onBack(); // Go back to list immediately (it will disappear from there too via snapshot)
     } catch (err) {
@@ -204,7 +224,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ post, onBack }) => {
   };
 
   const canDeletePost =
-    user && (user.uid === post.authorId || userRole === 'admin' || userRole === 'moderator');
+    user && post && (user.uid === post.authorId || userRole === 'admin' || userRole === 'moderator');
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 min-h-[600px] flex flex-col">
@@ -217,71 +237,83 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ post, onBack }) => {
           Back to Topics
         </button>
 
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+        {postLoading ? (
+            <div className="text-center py-8 text-gray-500">Loading topic...</div>
+        ) : !post ? (
+             <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>Topic not found or deleted.</AlertDescription>
+             </Alert>
+        ) : (
+        <>
+            {error && (
+            <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>
+            )}
+
+            <div className="flex justify-between items-start">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">{post.title}</h1>
+            {canDeletePost && (
+                <button
+                onClick={handleDeleteClick}
+                disabled={isDeletingPost}
+                title="Delete Topic"
+                className="text-gray-400 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-50"
+                >
+                <Trash2 className="w-5 h-5" />
+                </button>
+            )}
+            </div>
+
+            <div className="flex items-center text-sm text-gray-500 space-x-4 mb-6">
+            <div className="flex items-center">
+                <User className="w-4 h-4 mr-1.5" />
+                {post.authorName}
+            </div>
+            <div className="flex items-center">
+                <Clock className="w-4 h-4 mr-1.5" />
+                {post.createdAt?.toDate
+                ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true })
+                : 'Just now'}
+            </div>
+            </div>
+
+            <div className="prose max-w-none text-gray-800 mb-8 whitespace-pre-wrap">
+            {post.content}
+            </div>
+
+            <div className="border-t border-gray-100 pt-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center">
+                <MessageSquare className="w-5 h-5 mr-2" />
+                Discussion
+            </h3>
+
+            {/* Main Reply Form */}
+            <div className="mb-8">
+                <ReplyForm postId={post.id} onSuccess={() => {}} placeholder="Leave a comment..." />
+            </div>
+
+            {/* Comments List */}
+            {loading ? (
+                <div className="text-center py-8 text-gray-500">Loading discussion...</div>
+            ) : comments.length > 0 ? (
+                <div className="space-y-6">
+                {comments.map((comment) => (
+                    <CommentItem key={comment.id} comment={comment} postId={post.id} />
+                ))}
+                </div>
+            ) : (
+                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                No comments yet. Be the first to join the conversation!
+                </div>
+            )}
+            </div>
+        </>
         )}
-
-        <div className="flex justify-between items-start">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">{post.title}</h1>
-          {canDeletePost && (
-            <button
-              onClick={handleDeleteClick}
-              disabled={isDeletingPost}
-              title="Delete Topic"
-              className="text-gray-400 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-50"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
-          )}
-        </div>
-
-        <div className="flex items-center text-sm text-gray-500 space-x-4 mb-6">
-          <div className="flex items-center">
-            <User className="w-4 h-4 mr-1.5" />
-            {post.authorName}
-          </div>
-          <div className="flex items-center">
-            <Clock className="w-4 h-4 mr-1.5" />
-            {post.createdAt?.toDate
-              ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true })
-              : 'Just now'}
-          </div>
-        </div>
-
-        <div className="prose max-w-none text-gray-800 mb-8 whitespace-pre-wrap">
-          {post.content}
-        </div>
-
-        <div className="border-t border-gray-100 pt-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <MessageSquare className="w-5 h-5 mr-2" />
-            Discussion
-          </h3>
-
-          {/* Main Reply Form */}
-          <div className="mb-8">
-            <ReplyForm postId={post.id} onSuccess={() => {}} placeholder="Leave a comment..." />
-          </div>
-
-          {/* Comments List */}
-          {loading ? (
-            <div className="text-center py-8 text-gray-500">Loading discussion...</div>
-          ) : comments.length > 0 ? (
-            <div className="space-y-6">
-              {comments.map((comment) => (
-                <CommentItem key={comment.id} comment={comment} postId={post.id} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
-              No comments yet. Be the first to join the conversation!
-            </div>
-          )}
-        </div>
       </div>
 
       <ConfirmationModal

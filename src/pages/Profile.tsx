@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 
+import { updateProfile } from 'firebase/auth';
 import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { UserData } from '../types';
@@ -58,6 +59,13 @@ const Profile: React.FC = () => {
     if (!currentUser) return;
     setSaving(true);
     try {
+      // Update Auth Profile if name changed
+      if (formData.displayName && currentUser.displayName !== formData.displayName) {
+        await updateProfile(currentUser, {
+          displayName: formData.displayName
+        });
+      }
+
       const docRef = doc(db, 'users', currentUser.uid);
       await updateDoc(docRef, formData);
       setProfileData({ ...profileData, ...formData } as UserData);
@@ -200,6 +208,17 @@ const Profile: React.FC = () => {
       <Card>
         <CardContent className="space-y-6 pt-6">
           {/* Common Fields */}
+          <div className="space-y-2">
+            <Label htmlFor="displayName">Full Name</Label>
+            <Input 
+              id="displayName" 
+              disabled={!isEditing}
+              value={formData.displayName || ''}
+              onChange={e => setFormData({...formData, displayName: e.target.value})}
+              placeholder="Your Full Name"
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="institution">Institution / Organization</Label>
             <Input 

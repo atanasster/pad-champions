@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { TopicList } from './TopicList';
 import { TopicDetail } from './TopicDetail';
 import { CreateTopicForm } from './CreateTopicForm';
@@ -10,13 +11,14 @@ import { cn } from '../../lib/utils';
 
 const db = getFirestore();
 
-type ViewState = 'list' | 'detail' | 'create';
-
 export const Forums: React.FC = () => {
   const { userRole } = useAuth();
-  const [view, setView] = useState<ViewState>('list');
-  const [activeBoard, setActiveBoard] = useState<ForumType>('general');
-  const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  const activeBoard = (searchParams.get('forumTab') as ForumType) || 'general';
+  const topicId = searchParams.get('topicId');
+  const action = searchParams.get('action'); // 'create'
+
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,18 +47,45 @@ export const Forums: React.FC = () => {
   }, [activeBoard]); // Re-run when board changes
 
   const handleCreateSuccess = () => {
-    setView('list');
+    setSearchParams(curr => {
+        const next = new URLSearchParams(curr);
+        next.delete('action');
+        return next;
+    });
   };
 
   const handlePostRead = (post: ForumPost) => {
-    setSelectedPost(post);
-    setView('detail');
+    setSearchParams(curr => {
+        const next = new URLSearchParams(curr);
+        next.set('topicId', post.id);
+        next.delete('action');
+        return next;
+    }, { preventScrollReset: true });
   };
 
-  if (view === 'create') {
+  const clearView = () => {
+      setSearchParams(curr => {
+          const next = new URLSearchParams(curr);
+          next.delete('topicId');
+          next.delete('action');
+          return next;
+      });
+  };
+
+  const changeTab = (tab: ForumType) => {
+      setSearchParams(curr => {
+          const next = new URLSearchParams(curr);
+          next.set('forumTab', tab);
+          next.delete('topicId');
+          next.delete('action');
+          return next;
+      }, { preventScrollReset: true });
+  };
+
+  if (action === 'create') {
     return (
       <CreateTopicForm
-        onCancel={() => setView('list')}
+        onCancel={clearView}
         onSuccess={handleCreateSuccess}
         initialForumType={activeBoard}
         userRole={userRole || 'volunteer'}
@@ -64,14 +93,11 @@ export const Forums: React.FC = () => {
     );
   }
 
-  if (view === 'detail' && selectedPost) {
+  if (topicId) {
     return (
       <TopicDetail
-        post={selectedPost}
-        onBack={() => {
-          setSelectedPost(null);
-          setView('list');
-        }}
+        postId={topicId}
+        onBack={clearView}
       />
     );
   }
@@ -84,7 +110,7 @@ export const Forums: React.FC = () => {
           <p className="text-gray-600">Connect with other volunteers and organizers.</p>
         </div>
         <button
-          onClick={() => setView('create')}
+          onClick={() => setSearchParams(curr => { const next = new URLSearchParams(curr); next.set('action', 'create'); return next; }, { preventScrollReset: true })}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#c2002f] hover:bg-[#a00027] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#c2002f]"
         >
           <Plus className="w-5 h-5 mr-2" />
@@ -95,7 +121,7 @@ export const Forums: React.FC = () => {
       {/* Board Tabs */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6 w-fit">
         <button
-          onClick={() => setActiveBoard('general')}
+          onClick={() => changeTab('general')}
           className={cn(
             'flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors',
             activeBoard === 'general'
@@ -109,7 +135,7 @@ export const Forums: React.FC = () => {
 
         {['learner', 'institutional-lead', 'admin', 'moderator'].includes(userRole || '') && (
           <button
-            onClick={() => setActiveBoard('learner')}
+            onClick={() => changeTab('learner')}
             className={cn(
               'flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors',
               activeBoard === 'learner'
@@ -124,7 +150,7 @@ export const Forums: React.FC = () => {
 
         {['institutional-lead', 'admin', 'moderator'].includes(userRole || '') && (
           <button
-            onClick={() => setActiveBoard('institutional-lead')}
+            onClick={() => changeTab('institutional-lead')}
             className={cn(
               'flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors',
               activeBoard === 'institutional-lead'

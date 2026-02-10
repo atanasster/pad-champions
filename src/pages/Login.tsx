@@ -1,16 +1,50 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { HeartHandshake } from 'lucide-react';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../components/ui/form';
+import { Input } from '../components/ui/input';
+
+const loginSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+const signUpSchema = loginSchema.extend({
+  confirmPassword: z.string().min(6, 'Password must be at least 6 characters'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+type FormValues = z.infer<typeof loginSchema> & {
+  confirmPassword?: string;
+};
 
 const Login: React.FC = () => {
-  const { signInWithGoogle, currentUser } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, currentUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
   const from = location.state?.from?.pathname || '/dashboard';
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(isSignUp ? signUpSchema : loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
+  });
 
   useEffect(() => {
     if (currentUser) {
@@ -18,12 +52,52 @@ const Login: React.FC = () => {
     }
   }, [currentUser, navigate, from]);
 
-  const handleLogin = async () => {
+  const handleGoogleLogin = async () => {
     try {
+      setError('');
       await signInWithGoogle();
-    } catch (error) {
-      console.error('Failed to log in', error);
+    } catch (error: any) {
+      console.error('Failed to log in with Google', error);
+      setError('Failed to log in with Google. Please try again.');
     }
+  };
+
+  const onSubmit = async (data: FormValues) => {
+    setError('');
+    setLoading(true);
+
+    try {
+      if (isSignUp) {
+        await signUpWithEmail(data.email, data.password);
+      } else {
+        await signInWithEmail(data.email, data.password);
+      }
+    } catch (error: any) {
+      console.error('Authentication failed', error);
+      let errorMessage = 'Failed to authenticate. Please check your credentials.';
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'Email is already in use using another provider or account.';
+      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+        errorMessage = 'Invalid email or password.';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'Password should be at least 6 characters.';
+      } else if (error.code === 'auth/user-not-found') {
+        errorMessage = 'No account found with this email.';
+      }
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleMode = () => {
+    setIsSignUp(!isSignUp);
+    setError('');
+    form.reset({
+      email: form.getValues('email'), // Preserve email
+      password: '',
+      confirmPassword: '',
+    });
   };
 
   return (
@@ -44,19 +118,113 @@ const Login: React.FC = () => {
             <HeartHandshake className="w-10 h-10 text-[#c2002f]" />
           </div>
           <CardTitle className="text-3xl font-extrabold text-slate-900 tracking-tight">
-            Welcome, Volunteer!
+            {isSignUp ? 'Create Account' : 'Welcome Back'}
           </CardTitle>
           <CardDescription className="text-slate-500 mt-2 text-base leading-relaxed">
-            Join the Champions Network to help save limbs and transform lives.
+            {isSignUp 
+              ? 'Join the Champions Network to help save limbs.' 
+              : 'Sign in to access your dashboard.'}
           </CardDescription>
         </CardHeader>
 
         <CardContent className="px-10 pb-10">
           <div className="space-y-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                {error && (
+                  <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md border border-red-100">
+                    {error}
+                  </div>
+                )}
+                
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-slate-700">Email</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="name@example.com" 
+                          {...field} 
+                          disabled={loading}
+                          className="bg-white focus:ring-[#c2002f]"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-slate-700">Password</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password"
+                          placeholder="••••••••" 
+                          {...field} 
+                          disabled={loading}
+                          className="bg-white focus:ring-[#c2002f]"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {isSignUp && (
+                  <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-slate-700">Confirm Password</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="password"
+                            placeholder="••••••••" 
+                            {...field} 
+                            disabled={loading}
+                            className="bg-white focus:ring-[#c2002f]"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full bg-[#c2002f] hover:bg-[#a00027] text-white"
+                  disabled={loading}
+                >
+                  {loading ? 'Processing...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+                </Button>
+              </form>
+            </Form>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-slate-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white/95 backdrop-blur-sm px-2 text-slate-500">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
             <Button
-              onClick={handleLogin}
-              className="w-full h-14 text-base font-semibold transition-all hover:scale-[1.02] hover:shadow-lg bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 group"
+              type="button"
+              onClick={handleGoogleLogin}
+              className="w-full h-12 text-base font-semibold transition-all hover:scale-[1.02] hover:shadow-lg bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 group"
               variant="outline"
+              disabled={loading}
             >
               <svg
                 className="mr-3 h-5 w-5 transition-transform group-hover:scale-110"
@@ -79,22 +247,24 @@ const Login: React.FC = () => {
                   fill="#EA4335"
                 />
               </svg>
-              Sign in with Google
+              Google
             </Button>
 
-            <div className="relative py-2">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-slate-200" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white/95 backdrop-blur-sm px-3 text-slate-400 font-medium">
-                  Secured by Google
-                </span>
-              </div>
+            <div className="text-center text-sm">
+              <span className="text-slate-600">
+                {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+              </span>
+              <button
+                type="button"
+                onClick={toggleMode}
+                className="font-medium text-[#c2002f] hover:text-[#a00027] underline-offset-4 hover:underline"
+              >
+                {isSignUp ? 'Sign In' : 'Sign Up'}
+              </button>
             </div>
 
             <p className="text-center text-xs text-slate-400 max-w-xs mx-auto leading-normal">
-              By signing in, you agree to our{' '}
+              By continuing, you agree to our{' '}
               <a href="#" className="underline hover:text-slate-600">
                 Terms of Service
               </a>{' '}
