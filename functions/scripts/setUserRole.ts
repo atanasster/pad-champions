@@ -31,7 +31,9 @@ async function setUserRole(targetUid: string, targetRole: string) {
     console.log(
       'SUCCESS: User role updated. They may need to sign out and back in to refresh their token.',
     );
-  } catch (error: any) {
+  } catch (err: unknown) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const error = err as any;
     console.error('ERROR setting user role:', error);
     if (error.code === 'auth/internal-error' && (error.message.includes('quota project') || error.message.includes('ADC'))) {
       console.error('\n⚠️  It looks like your Application Default Credentials need a refresh or a quota project.');

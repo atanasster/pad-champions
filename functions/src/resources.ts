@@ -1,7 +1,7 @@
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import * as logger from 'firebase-functions/logger';
 import { db, storage } from './init';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
 // Interfaces based on src/types.ts
 interface ResourceItem {
@@ -15,8 +15,8 @@ interface ResourceItem {
     size?: number;
     uploadedBy?: string;
     createdBy?: string;
-    createdAt?: any;
-    updatedAt?: any;
+    createdAt?: Timestamp | FieldValue;
+    updatedAt?: Timestamp | FieldValue;
     accessLevel: 'public' | 'learner' | 'lead' | 'admin';
     storagePath?: string;
 }
@@ -44,7 +44,7 @@ export const getResources = onCall({ cors: true }, async (request: CallableReque
     const role = request.auth.token.role;
 
     try {
-        let query = db.collection('resources').where('parentId', '==', parentId);
+        const query = db.collection('resources').where('parentId', '==', parentId);
         
         // Order by type and name for consistent sorting
         // Note: Doing this in-memory to avoid complex composite index requirements during development
@@ -176,7 +176,7 @@ export const deleteResource = onCall({ cors: true }, async (request: CallableReq
         if (data.type === 'file' && data.storagePath) {
             try {
                 await storage.bucket().file(data.storagePath).delete();
-            } catch (storageError: any) {
+            } catch (storageError: unknown) {
                 logger.warn(`Failed to delete storage file ${data.storagePath}:`, storageError);
                 // Proceed to delete document even if storage delete fails (might be already gone)
             }
