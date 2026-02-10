@@ -34,7 +34,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <Card className="shadow-lg border-opacity-50">
           <CardHeader>
             <CardTitle>{title}</CardTitle>
-            <CardDescription className="pt-2">{message}</CardDescription>
+            <div className="text-sm text-muted-foreground pt-2">{message}</div>
           </CardHeader>
           <CardFooter className="flex justify-end gap-3">
             {onConfirm ? (
