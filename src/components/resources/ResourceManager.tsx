@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { ResourceItem } from '../../types';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -34,6 +34,7 @@ interface ResourceManagerProps {
 export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, title = "Resources" }) => {
   const { userRole, currentUser } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   
   const currentFolderId = searchParams.get('folderId');
   const selectedResourceId = searchParams.get('resourceId');
@@ -93,7 +94,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
     } finally {
       setLoading(false);
     }
-  }, [currentFolderId]);
+  }, [currentFolderId, location.search]);
 
   useEffect(() => {
     fetchResources();
@@ -144,7 +145,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
     };
     
     reconstructPath();
-  }, [currentFolderId, folderPath]); // Only run when folder changes
+  }, [currentFolderId, folderPath, location.search]); // Only run when folder changes
 
 
   const handleCreateFolder = async () => {

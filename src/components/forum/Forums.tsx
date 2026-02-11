@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { TopicList } from './TopicList';
 import { TopicDetail } from './TopicDetail';
 import { CreateTopicForm } from './CreateTopicForm';
@@ -14,6 +14,7 @@ const db = getFirestore();
 export const Forums: React.FC = () => {
   const { userRole } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   
   const activeBoard = (searchParams.get('forumTab') as ForumType) || 'general';
   const topicId = searchParams.get('topicId');
@@ -44,7 +45,7 @@ export const Forums: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, [activeBoard]); // Re-run when board changes
+  }, [activeBoard, location.search]); // Re-run when board changes
 
   const handleCreateSuccess = () => {
     setSearchParams(curr => {
