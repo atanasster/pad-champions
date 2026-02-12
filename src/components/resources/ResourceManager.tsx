@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { ResourceItem } from '../../types';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -33,11 +32,11 @@ interface ResourceManagerProps {
 
 export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, title = "Resources" }) => {
   const { userRole, currentUser } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const location = useLocation();
   
-  const currentFolderId = searchParams.get('folderId');
-  const selectedResourceId = searchParams.get('resourceId');
+  // Local state for navigation (URL is synced but not the source of truth for rendering)
+  const initialParams = new URLSearchParams(window.location.search);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(initialParams.get('folderId'));
+  const [activeResourceId, setActiveResourceId] = useState<string | null>(initialParams.get('resourceId'));
 
   const [folderPath, setFolderPath] = useState<{id: string, name: string}[]>([]);
   const [resources, setResources] = useState<ResourceItem[]>([]);
@@ -50,8 +49,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
   const [droppedFile, setDroppedFile] = useState<File | null>(null);
   const dragCounter = useRef(0);
   
-  // Viewer State - filtered from resources or fetched individually if needed
-  // For simplicity, we'll try to find it in the current list first
+  // Viewer State
   const [selectedResource, setSelectedResource] = useState<ResourceItem | null>(null);
 
   // Modals State
@@ -82,19 +80,39 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
   const canManage = ['admin', 'moderator'].includes(userRole || '');
   const isLead = userRole === 'institutional-lead';
 
+  // Helper: build URL with given params
+  const buildUrl = (folderId: string | null, resourceId: string | null) => {
+    const params = new URLSearchParams();
+    if (folderId) params.set('folderId', folderId);
+    if (resourceId) params.set('resourceId', resourceId);
+    const qs = params.toString();
+    return qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+  };
+
+  // Sync local state from URL on browser back/forward
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      setActiveFolderId(params.get('folderId'));
+      setActiveResourceId(params.get('resourceId'));
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   // 1. Fetch Resources for current folder
   const fetchResources = useCallback(async () => {
     setLoading(true);
     try {
       const getResourcesFn = httpsCallable<{ parentId: string | null }, { resources: ResourceItem[] }>(functions, 'getResources');
-      const result = await getResourcesFn({ parentId: currentFolderId });
+      const result = await getResourcesFn({ parentId: activeFolderId });
       setResources(result.data.resources);
     } catch (error) {
       console.error("Error fetching resources:", error);
     } finally {
       setLoading(false);
     }
-  }, [currentFolderId, location.search]);
+  }, [activeFolderId]);
 
   useEffect(() => {
     fetchResources();
@@ -102,41 +120,33 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
 
   // 2. Sync Selected Resource
   useEffect(() => {
-    if (selectedResourceId && resources.length > 0) {
-      const found = resources.find(r => r.id === selectedResourceId);
+    if (activeResourceId && resources.length > 0) {
+      const found = resources.find(r => r.id === activeResourceId);
       if (found) setSelectedResource(found);
-    } else if (!selectedResourceId) {
+    } else if (!activeResourceId) {
       setSelectedResource(null);
     }
-  }, [selectedResourceId, resources]);
+  }, [activeResourceId, resources]);
 
   // 3. Reconstruct Path if missing (Deep Linking support)
   useEffect(() => {
     const reconstructPath = async () => {
-        if (!currentFolderId) {
+        if (!activeFolderId) {
             setFolderPath([]);
             return;
         }
 
-        // If we already have a path that ends in currentFolderId, we are good
-        if (folderPath.length > 0 && folderPath[folderPath.length - 1].id === currentFolderId) {
+        // If we already have a path that ends in activeFolderId, we are good
+        if (folderPath.length > 0 && folderPath[folderPath.length - 1].id === activeFolderId) {
             return;
         }
 
         try {
-            // Simplified reconstruction: Just fetch current folder for now
-            // Ideally we'd recursively fetch parents, but let's start with the current one
-            const docRef = doc(db, 'resources', currentFolderId);
+            const docRef = doc(db, 'resources', activeFolderId);
             const docSnap = await getDoc(docRef);
             
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                // If we really want full breadcrumbs, we'd need to fetch the parent chain.
-                // For now, let's just show the current folder. 
-                // A more robust solution would be to store 'path' array in the document itself.
-                
-                // Hack: If we don't have the parent in our path, we reset to just this folder.
-                // This means "Home" takes you back to root, which is safe.
                 setFolderPath([{ id: docSnap.id, name: data.name }]);
             }
         } catch (error) {
@@ -145,7 +155,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
     };
     
     reconstructPath();
-  }, [currentFolderId, folderPath, location.search]); // Only run when folder changes
+  }, [activeFolderId, folderPath]);
 
 
   const handleCreateFolder = async () => {
@@ -153,7 +163,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
 
     try {
       const createFolderFn = httpsCallable<{ name: string; parentId: string | null }, ResourceItem>(functions, 'createResourceFolder');
-      await createFolderFn({ name: createFolderState.name, parentId: currentFolderId });
+      await createFolderFn({ name: createFolderState.name, parentId: activeFolderId });
       fetchResources(); // Refresh list
       setCreateFolderState({ isOpen: false, name: '' });
     } catch (error) {
@@ -190,7 +200,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
             fileData: base64,
             fileName: file.name,
             mimeType: file.type,
-            parentId: currentFolderId,
+            parentId: activeFolderId,
             accessLevel: 'learner'
           });
           
@@ -287,12 +297,9 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
       fetchResources();
       setDeleteState({ isOpen: false, item: null });
       // If we deleted the currently viewed resource
-      if (selectedResourceId === deleteState.item.id) {
-          setSearchParams(curr => {
-              const next = new URLSearchParams(curr);
-              next.delete('resourceId');
-              return next;
-          });
+      if (activeResourceId === deleteState.item.id) {
+          setActiveResourceId(null);
+          window.history.pushState(null, '', buildUrl(activeFolderId, null));
       }
     } catch (error) {
       console.error("Error deleting:", error);
@@ -326,36 +333,25 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
   };
 
   const enterFolder = (folder: ResourceItem) => {
-    // Optimistic Update
-    setFolderPath([...folderPath, { id: folder.id, name: folder.name }]);
-    
-    setSearchParams(curr => {
-        const next = new URLSearchParams(curr);
-        next.set('folderId', folder.id);
-        next.delete('resourceId'); // Close viewer
-        return next;
-    });
+    setFolderPath(prev => [...prev, { id: folder.id, name: folder.name }]);
+    setActiveFolderId(folder.id);
+    setActiveResourceId(null);
+    window.history.pushState(null, '', buildUrl(folder.id, null));
   };
 
   const navigateUp = (index: number) => {
     if (index === -1) {
       setFolderPath([]);
-      setSearchParams(curr => {
-        const next = new URLSearchParams(curr);
-        next.delete('folderId');
-        next.delete('resourceId');
-        return next;
-      });
+      setActiveFolderId(null);
+      setActiveResourceId(null);
+      window.history.pushState(null, '', buildUrl(null, null));
     } else {
       const newPath = folderPath.slice(0, index + 1);
-      setFolderPath(newPath);
       const targetFolderId = newPath[newPath.length - 1].id;
-      setSearchParams(curr => {
-        const next = new URLSearchParams(curr);
-        next.set('folderId', targetFolderId);
-        next.delete('resourceId');
-        return next;
-      });
+      setFolderPath(newPath);
+      setActiveFolderId(targetFolderId);
+      setActiveResourceId(null);
+      window.history.pushState(null, '', buildUrl(targetFolderId, null));
     }
   };
 
@@ -459,11 +455,8 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
                        if (item.type === 'folder') {
                            enterFolder(item);
                        } else {
-                           setSearchParams(curr => {
-                               const next = new URLSearchParams(curr);
-                               next.set('resourceId', item.id!);
-                               return next;
-                           });
+                           setActiveResourceId(item.id!);
+                           window.history.pushState(null, '', buildUrl(activeFolderId, item.id!));
                        }
                      }}
                    >
@@ -527,7 +520,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ className, tit
                                 Download
                              </a>
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => setSearchParams(curr => { const next = new URLSearchParams(curr); next.delete('resourceId'); return next; })}>
+                        <Button variant="ghost" size="sm" onClick={() => { setActiveResourceId(null); window.history.pushState(null, '', buildUrl(activeFolderId, null)); }}>
                             <X className="w-4 h-4" />
                         </Button>
                     </div>

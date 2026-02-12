@@ -31,14 +31,16 @@ import { AuthProvider } from './contexts/AuthProvider';
 
 const Layout = () => {
   return (
-    <div className="flex flex-col min-h-screen font-sans text-slate-900 bg-slate-50">
-      <ScrollRestoration />
-      <Navbar />
-      <main className="grow">
-        <Outlet />
-      </main>
-      <Footer />
-    </div>
+    <AuthProvider>
+      <div className="flex flex-col min-h-screen font-sans text-slate-900 bg-slate-50">
+        <ScrollRestoration />
+        <Navbar />
+        <main className="grow">
+          <Outlet />
+        </main>
+        <Footer />
+      </div>
+    </AuthProvider>
   );
 };
 
@@ -75,9 +77,7 @@ const router = createBrowserRouter(
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+    <RouterProvider router={router} />
   );
 };
 

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { TopicList } from './TopicList';
 import { TopicDetail } from './TopicDetail';
 import { CreateTopicForm } from './CreateTopicForm';
@@ -13,21 +13,29 @@ const db = getFirestore();
 
 export const Forums: React.FC = () => {
   const { userRole } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const location = useLocation();
   
-  const activeBoard = (searchParams.get('forumTab') as ForumType) || 'general';
-  const topicId = searchParams.get('topicId');
-  const action = searchParams.get('action'); // 'create'
+  // Derive params from location.search (useLocation always triggers re-renders)
+  const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const activeBoard = (queryParams.get('forumTab') as ForumType) || 'general';
+  const topicId = queryParams.get('topicId');
+  const action = queryParams.get('action'); // 'create'
 
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Helper to navigate with updated search params
+  const updateParams = (updater: (params: URLSearchParams) => void, opts?: { preventScrollReset?: boolean }) => {
+    const next = new URLSearchParams(location.search);
+    updater(next);
+    const qs = next.toString();
+    navigate(qs ? `${location.pathname}?${qs}` : location.pathname, {
+      preventScrollReset: opts?.preventScrollReset,
+    });
+  };
+
   useEffect(() => {
-    // Determine sort order - sticking to "Latest Activity" essentially (newest posts first,
-    // ideally we'd sort by lastCommentAt but we might need a composite index for that)
-    // For now, sorting by createdAt desc.
-    // Filter by activeBoard
     const q = query(
       collection(db, 'posts'),
       where('forumType', '==', activeBoard),
@@ -45,42 +53,32 @@ export const Forums: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, [activeBoard, location.search]); // Re-run when board changes
+  }, [activeBoard]); // Re-run when board changes
 
   const handleCreateSuccess = () => {
-    setSearchParams(curr => {
-        const next = new URLSearchParams(curr);
-        next.delete('action');
-        return next;
-    });
+    updateParams(p => p.delete('action'));
   };
 
   const handlePostRead = (post: ForumPost) => {
-    setSearchParams(curr => {
-        const next = new URLSearchParams(curr);
-        next.set('topicId', post.id);
-        next.delete('action');
-        return next;
+    updateParams(p => {
+      p.set('topicId', post.id);
+      p.delete('action');
     }, { preventScrollReset: true });
   };
 
   const clearView = () => {
-      setSearchParams(curr => {
-          const next = new URLSearchParams(curr);
-          next.delete('topicId');
-          next.delete('action');
-          return next;
-      });
+    updateParams(p => {
+      p.delete('topicId');
+      p.delete('action');
+    });
   };
 
   const changeTab = (tab: ForumType) => {
-      setSearchParams(curr => {
-          const next = new URLSearchParams(curr);
-          next.set('forumTab', tab);
-          next.delete('topicId');
-          next.delete('action');
-          return next;
-      }, { preventScrollReset: true });
+    updateParams(p => {
+      p.set('forumTab', tab);
+      p.delete('topicId');
+      p.delete('action');
+    }, { preventScrollReset: true });
   };
 
   if (action === 'create') {
@@ -111,7 +109,7 @@ export const Forums: React.FC = () => {
           <p className="text-gray-600">Connect with other volunteers and organizers.</p>
         </div>
         <button
-          onClick={() => setSearchParams(curr => { const next = new URLSearchParams(curr); next.set('action', 'create'); return next; }, { preventScrollReset: true })}
+          onClick={() => updateParams(p => p.set('action', 'create'), { preventScrollReset: true })}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#c2002f] hover:bg-[#a00027] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#c2002f]"
         >
           <Plus className="w-5 h-5 mr-2" />

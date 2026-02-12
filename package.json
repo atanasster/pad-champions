@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "preview": "vite preview",
-    "deploy": "npm run lint && npm run build && firebase deploy --only hosting",
+    "deploy": "npm run lint && npm run build && firebase deploy --only hosting --project pad-champions",
     "set-role": "cd functions && GOOGLE_CLOUD_PROJECT=pad-champions npx ts-node scripts/setUserRole.ts"
   },
   "dependencies": {
